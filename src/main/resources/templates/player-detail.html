@@ -28,7 +28,13 @@
             <table class="table table-sm table-striped">
                 <thead>
                 <tr>
-                    <th>Stat</th><th>Solo</th><th>Solo FPP</th><th>Duo</th><th>Duo FPP</th><th>Squad</th><th>Squad FPP</th>
+                    <th>Stat</th>
+                    <th>Solo</th>
+                    <th>Solo FPP</th>
+                    <th>Duo</th>
+                    <th>Duo FPP</th>
+                    <th>Squad</th>
+                    <th>Squad FPP</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -61,12 +67,24 @@
                 </tr>
                 <tr>
                     <td>Damage Dealt</td>
-                    <td th:text="${#numbers.formatDecimal(player.lifetimeStats.gameModeStats.solo?.damageDealt ?: 0, 1, 0)}">0</td>
-                    <td th:text="${#numbers.formatDecimal(player.lifetimeStats.gameModeStats.soloFpp?.damageDealt ?: 0, 1, 0)}">0</td>
-                    <td th:text="${#numbers.formatDecimal(player.lifetimeStats.gameModeStats.duo?.damageDealt ?: 0, 1, 0)}">0</td>
-                    <td th:text="${#numbers.formatDecimal(player.lifetimeStats.gameModeStats.duoFpp?.damageDealt ?: 0, 1, 0)}">0</td>
-                    <td th:text="${#numbers.formatDecimal(player.lifetimeStats.gameModeStats.squad?.damageDealt ?: 0, 1, 0)}">0</td>
-                    <td th:text="${#numbers.formatDecimal(player.lifetimeStats.gameModeStats.squadFpp?.damageDealt ?: 0, 1, 0)}">0</td>
+                    <td th:text="${#numbers.formatDecimal(player.lifetimeStats.gameModeStats.solo?.damageDealt ?: 0, 1, 0)}">
+                        0
+                    </td>
+                    <td th:text="${#numbers.formatDecimal(player.lifetimeStats.gameModeStats.soloFpp?.damageDealt ?: 0, 1, 0)}">
+                        0
+                    </td>
+                    <td th:text="${#numbers.formatDecimal(player.lifetimeStats.gameModeStats.duo?.damageDealt ?: 0, 1, 0)}">
+                        0
+                    </td>
+                    <td th:text="${#numbers.formatDecimal(player.lifetimeStats.gameModeStats.duoFpp?.damageDealt ?: 0, 1, 0)}">
+                        0
+                    </td>
+                    <td th:text="${#numbers.formatDecimal(player.lifetimeStats.gameModeStats.squad?.damageDealt ?: 0, 1, 0)}">
+                        0
+                    </td>
+                    <td th:text="${#numbers.formatDecimal(player.lifetimeStats.gameModeStats.squadFpp?.damageDealt ?: 0, 1, 0)}">
+                        0
+                    </td>
                 </tr>
                 <tr>
                     <td>Top 10s</td>
@@ -85,14 +103,28 @@
     <!-- Per-Match Skill Level Charts -->
     <div th:if="${!#lists.isEmpty(perMatchStats)}">
         <h3>Skill Level Across Recent Matches</h3>
-        <p class="text-muted"><small>Each point is one match. Stats are median/avg of all participants' lifetime stats in that match's game mode.</small></p>
+        <p class="text-muted"><small>Each point is one match. Stats are median/avg of all participants' lifetime stats
+            in that match's game mode.</small></p>
         <div class="row mb-4">
-            <div class="col-md-6"><canvas id="matchKillsChart"></canvas></div>
-            <div class="col-md-6"><canvas id="matchDamageChart"></canvas></div>
+            <div class="col-md-6">
+                <canvas id="matchKillsChart"></canvas>
+            </div>
+            <div class="col-md-6">
+                <canvas id="matchDamageChart"></canvas>
+            </div>
         </div>
         <div class="row mb-4">
-            <div class="col-md-6"><canvas id="matchKDChart"></canvas></div>
-            <div class="col-md-6"><canvas id="matchParticipantsChart"></canvas></div>
+            <div class="col-md-6">
+                <canvas id="matchKDChart"></canvas>
+            </div>
+            <div class="col-md-6">
+                <canvas id="matchParticipantsChart"></canvas>
+            </div>
+        </div>
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <canvas id="matchBotsChart"></canvas>
+            </div>
         </div>
     </div>
 
@@ -102,7 +134,15 @@
     <div class="table-responsive" th:if="${!#lists.isEmpty(matches)}">
         <table class="table table-sm table-striped">
             <thead>
-            <tr><th>Date</th><th>Mode</th><th>Map</th><th>Duration</th><th>Participants (with stats)</th><th></th></tr>
+            <tr>
+                <th>Date</th>
+                <th>Mode</th>
+                <th>Map</th>
+                <th>Duration</th>
+                <th>Participants (with stats)</th>
+                <th>Bots</th>
+                <th></th>
+            </tr>
             </thead>
             <tbody>
             <tr th:each="match : ${matches}">
@@ -111,6 +151,7 @@
                 <td th:text="${match.mapName}"></td>
                 <td th:text="${match.duration + 's'}"></td>
                 <td th:text="${#lists.size(match.participants)}"></td>
+                <td th:text="${match.botCount}"></td>
                 <td>
                     <a th:href="@{/players/{aid}/matches/{mid}(aid=${player.accountId},mid=${match.matchId})}"
                        class="btn btn-sm btn-outline-primary">View</a>
@@ -130,17 +171,31 @@
     const medianKD = /*[[${perMatchStats.![medianKD]}]]*/ [];
     const avgKD = /*[[${perMatchStats.![avgKD]}]]*/ [];
     const participantCounts = /*[[${perMatchStats.![participantCount]}]]*/ [];
+    const botCounts = /*[[${perMatchStats.![botCount]}]]*/ [];
 
     new Chart(document.getElementById('matchKillsChart'), {
         type: 'line',
         data: {
             labels: labels,
             datasets: [
-                { label: 'Median Kills', data: medianKills, borderColor: 'rgba(54,162,235,1)', fill: false, tension: 0.2 },
-                { label: 'Avg Kills', data: avgKills, borderColor: 'rgba(255,99,132,1)', fill: false, tension: 0.2, borderDash: [5,5] }
+                {
+                    label: 'Median Kills',
+                    data: medianKills,
+                    borderColor: 'rgba(54,162,235,1)',
+                    fill: false,
+                    tension: 0.2
+                },
+                {
+                    label: 'Avg Kills',
+                    data: avgKills,
+                    borderColor: 'rgba(255,99,132,1)',
+                    fill: false,
+                    tension: 0.2,
+                    borderDash: [5, 5]
+                }
             ]
         },
-        options: { responsive: true, plugins: { title: { display: true, text: 'Participant Lifetime Kills per Match' } } }
+        options: {responsive: true, plugins: {title: {display: true, text: 'Participant Lifetime Kills per Match'}}}
     });
 
     new Chart(document.getElementById('matchDamageChart'), {
@@ -148,11 +203,24 @@
         data: {
             labels: labels,
             datasets: [
-                { label: 'Median Damage', data: medianDamage, borderColor: 'rgba(75,192,192,1)', fill: false, tension: 0.2 },
-                { label: 'Avg Damage', data: avgDamage, borderColor: 'rgba(255,159,64,1)', fill: false, tension: 0.2, borderDash: [5,5] }
+                {
+                    label: 'Median Damage',
+                    data: medianDamage,
+                    borderColor: 'rgba(75,192,192,1)',
+                    fill: false,
+                    tension: 0.2
+                },
+                {
+                    label: 'Avg Damage',
+                    data: avgDamage,
+                    borderColor: 'rgba(255,159,64,1)',
+                    fill: false,
+                    tension: 0.2,
+                    borderDash: [5, 5]
+                }
             ]
         },
-        options: { responsive: true, plugins: { title: { display: true, text: 'Participant Lifetime Damage per Match' } } }
+        options: {responsive: true, plugins: {title: {display: true, text: 'Participant Lifetime Damage per Match'}}}
     });
 
     new Chart(document.getElementById('matchKDChart'), {
@@ -160,20 +228,43 @@
         data: {
             labels: labels,
             datasets: [
-                { label: 'Median K/D', data: medianKD, borderColor: 'rgba(153,102,255,1)', fill: false, tension: 0.2 },
-                { label: 'Avg K/D', data: avgKD, borderColor: 'rgba(255,205,86,1)', fill: false, tension: 0.2, borderDash: [5,5] }
+                {label: 'Median K/D', data: medianKD, borderColor: 'rgba(153,102,255,1)', fill: false, tension: 0.2},
+                {
+                    label: 'Avg K/D',
+                    data: avgKD,
+                    borderColor: 'rgba(255,205,86,1)',
+                    fill: false,
+                    tension: 0.2,
+                    borderDash: [5, 5]
+                }
             ]
         },
-        options: { responsive: true, plugins: { title: { display: true, text: 'Participant K/D Ratio per Match' } } }
+        options: {responsive: true, plugins: {title: {display: true, text: 'Participant K/D Ratio per Match'}}}
     });
 
     new Chart(document.getElementById('matchParticipantsChart'), {
         type: 'bar',
         data: {
             labels: labels,
-            datasets: [{ label: 'Participants with Stats', data: participantCounts, backgroundColor: 'rgba(54,162,235,0.5)' }]
+            datasets: [{
+                label: 'Participants with Stats',
+                data: participantCounts,
+                backgroundColor: 'rgba(54,162,235,0.5)'
+            }]
         },
-        options: { responsive: true, plugins: { title: { display: true, text: 'Participants with Lifetime Stats per Match' } } }
+        options: {
+            responsive: true,
+            plugins: {title: {display: true, text: 'Participants with Lifetime Stats per Match'}}
+        }
+    });
+
+    new Chart(document.getElementById('matchBotsChart'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{label: 'Bots', data: botCounts, backgroundColor: 'rgba(255,99,132,0.5)'}]
+        },
+        options: {responsive: true, plugins: {title: {display: true, text: 'Bots per Match'}}}
     });
 </script>
 </body>

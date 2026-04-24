@@ -88,7 +88,8 @@ class JobExecutorService(
             val gameMode: String,
             val mapName: String,
             val duration: Int,
-            val participantAccountIds: Map<String, String> // accountId -> playerName
+            val participantAccountIds: Map<String, String>, // accountId -> playerName
+            val botCount: Int
         )
 
         val fetchedMatches = mutableListOf<FetchedMatch>()
@@ -102,14 +103,19 @@ class JobExecutorService(
                 val createdAt = Instant.parse(createdAtStr)
 
                 val participants = mutableMapOf<String, String>()
+                var botCount = 0
                 matchResponse.included
                     .filter { it.type == "participant" }
                     .forEach { included ->
                         val stats = included.attributes?.stats
                         val pid = stats?.playerId
                         val pname = stats?.name
-                        if (pid != null && pname != null && pid.startsWith("account.")) {
-                            participants[pid] = pname
+                        if (pid != null && pname != null) {
+                            if (pid.startsWith("account.")) {
+                                participants[pid] = pname
+                            } else if (pid.startsWith("ai.")) {
+                                botCount++
+                            }
                         }
                     }
 
@@ -120,7 +126,8 @@ class JobExecutorService(
                         gameMode = attrs.gameMode ?: "unknown",
                         mapName = attrs.mapName ?: "unknown",
                         duration = attrs.duration,
-                        participantAccountIds = participants
+                        participantAccountIds = participants,
+                        botCount = botCount
                     )
                 )
             } catch (e: Exception) {
@@ -218,6 +225,7 @@ class JobExecutorService(
                 gameMode = fetchedMatch.gameMode,
                 mapName = fetchedMatch.mapName,
                 duration = fetchedMatch.duration,
+                botCount = fetchedMatch.botCount,
                 participants = participantSnapshots
             )
             matchRepository.save(matchDoc)

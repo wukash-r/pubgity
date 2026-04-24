@@ -14,6 +14,7 @@ data class Match(
     val gameMode: String,
     val mapName: String,
     val duration: Int,
+    val botCount: Int = 0,
     val participants: List<MatchParticipantSnapshot> = emptyList()
 )
 

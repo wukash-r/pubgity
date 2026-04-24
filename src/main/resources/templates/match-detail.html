@@ -16,7 +16,7 @@
         <small th:text="'Match ID: ' + ${match.matchId}"></small><br>
         <small th:text="'Date: ' + ${match.createdAt}"></small><br>
         <small th:text="'Mode: ' + ${match.gameMode} + ' | Map: ' + ${match.mapName} + ' | Duration: ' + ${match.duration} + 's'"></small><br>
-        <small th:text="${#lists.size(participants)} + ' participants with lifetime stats'"></small>
+        <small th:text="${#lists.size(participants)} + ' participants with lifetime stats | ' + ${match.botCount} + ' bots'"></small>
     </p>
 
     <div class="table-responsive">
