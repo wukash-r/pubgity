@@ -48,15 +48,17 @@ class AdminController(
     }
 
     @PostMapping("/players/{id}/update")
-    fun updatePlayer(@PathVariable id: String): String {
+    fun updatePlayer(@PathVariable id: String, @RequestParam(defaultValue = "5") matchCount: Int): String {
+        val clampedCount = matchCount.coerceIn(1, 10)
         val player = playerRepository.findById(ObjectId(id)).orElseThrow()
         val job = jobRepository.save(
             UpdateJob(
                 accountId = player.accountId,
-                playerName = player.playerName
+                playerName = player.playerName,
+                matchCount = clampedCount
             )
         )
-        logger.info("Queued update job {} for player '{}' (accountId={})", job.id, player.playerName, player.accountId)
+        logger.info("Queued update job {} for player '{}' (accountId={}, matchCount={})", job.id, player.playerName, player.accountId, clampedCount)
         return "redirect:/admin"
     }
 }

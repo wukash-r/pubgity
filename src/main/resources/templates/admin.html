@@ -25,6 +25,46 @@
         </div>
     </div>
 
+    <!-- Job Queue -->
+    <div class="card mb-4">
+        <div class="card-header">Job Queue</div>
+        <div class="card-body">
+            <table class="table table-sm">
+                <thead>
+                <tr>
+                    <th>Player</th>
+                    <th>Matches</th>
+                    <th>Status</th>
+                    <th>Progress</th>
+                    <th>Created</th>
+                    <th>Started</th>
+                    <th>Completed</th>
+                    <th>Error</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="job : ${jobs}" th:classappend="${job.status.name() == 'FAILED' ? 'table-danger' :
+                    (job.status.name() == 'RUNNING' ? 'table-info' :
+                    (job.status.name() == 'COMPLETED' ? 'table-success' : ''))}">
+                    <td th:text="${job.playerName}"></td>
+                    <td th:text="${job.matchCount}"></td>
+                    <td><span class="badge"
+                              th:classappend="${job.status.name() == 'QUEUED' ? 'bg-secondary' :
+                              (job.status.name() == 'RUNNING' ? 'bg-primary' :
+                              (job.status.name() == 'COMPLETED' ? 'bg-success' : 'bg-danger'))}"
+                              th:text="${job.status}"></span></td>
+                    <td><small th:text="${job.progress}"></small></td>
+                    <td><small th:text="${job.createdAt}"></small></td>
+                    <td><small th:text="${job.startedAt}"></small></td>
+                    <td><small th:text="${job.completedAt}"></small></td>
+                    <td><small th:text="${job.errorMessage}" class="text-danger"></small></td>
+                </tr>
+                </tbody>
+            </table>
+            <p th:if="${#lists.isEmpty(jobs)}" class="text-muted">No jobs yet.</p>
+        </div>
+    </div>
+
     <!-- Player List -->
     <div class="card mb-4">
         <div class="card-header">Tracked Players</div>
@@ -53,7 +93,9 @@
                     <td th:text="${player.matchIds.size()}"></td>
                     <td>
                         <form method="post" th:action="@{/admin/players/{id}/update(id=${player.id})}"
-                              style="display:inline">
+                              style="display:inline" class="d-flex align-items-center gap-1">
+                            <input type="number" name="matchCount" value="5" min="1" max="10"
+                                   class="form-control form-control-sm" style="width:60px" title="Last N matches">
                             <button type="submit" class="btn btn-sm btn-success">Update</button>
                         </form>
                         <form method="post" th:action="@{/admin/players/{id}/remove(id=${player.id})}"
@@ -67,44 +109,6 @@
                 </tbody>
             </table>
             <p th:if="${#lists.isEmpty(players)}" class="text-muted">No players tracked yet.</p>
-        </div>
-    </div>
-
-    <!-- Job Queue -->
-    <div class="card mb-4">
-        <div class="card-header">Job Queue</div>
-        <div class="card-body">
-            <table class="table table-sm">
-                <thead>
-                <tr>
-                    <th>Player</th>
-                    <th>Status</th>
-                    <th>Progress</th>
-                    <th>Created</th>
-                    <th>Started</th>
-                    <th>Completed</th>
-                    <th>Error</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="job : ${jobs}" th:classappend="${job.status.name() == 'FAILED' ? 'table-danger' :
-                    (job.status.name() == 'RUNNING' ? 'table-info' :
-                    (job.status.name() == 'COMPLETED' ? 'table-success' : ''))}">
-                    <td th:text="${job.playerName}"></td>
-                    <td><span class="badge"
-                              th:classappend="${job.status.name() == 'QUEUED' ? 'bg-secondary' :
-                              (job.status.name() == 'RUNNING' ? 'bg-primary' :
-                              (job.status.name() == 'COMPLETED' ? 'bg-success' : 'bg-danger'))}"
-                              th:text="${job.status}"></span></td>
-                    <td><small th:text="${job.progress}"></small></td>
-                    <td><small th:text="${job.createdAt}"></small></td>
-                    <td><small th:text="${job.startedAt}"></small></td>
-                    <td><small th:text="${job.completedAt}"></small></td>
-                    <td><small th:text="${job.errorMessage}" class="text-danger"></small></td>
-                </tr>
-                </tbody>
-            </table>
-            <p th:if="${#lists.isEmpty(jobs)}" class="text-muted">No jobs yet.</p>
         </div>
     </div>
 

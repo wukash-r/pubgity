@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatusCode
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestClient
+import org.springframework.web.client.body
 import org.traanite.pubgity.config.PubgApiProperties
 
 @Service
@@ -59,7 +60,7 @@ class PubgApiClient(
                     if (response.statusCode.value() == 429) throw TooManyRequestsException()
                     throw PubgApiException("Player search failed: ${response.statusCode}")
                 }
-                .body(PlayersResponse::class.java)!!
+                .body<PlayersResponse>()!!
                 .data.first()
         }
     }
@@ -74,7 +75,7 @@ class PubgApiClient(
                     if (response.statusCode.value() == 429) throw TooManyRequestsException()
                     throw PubgApiException("Player lookup failed: ${response.statusCode}")
                 }
-                .body(PlayersResponse::class.java)!!
+                .body<PlayersResponse>()!!
                 .data.first()
         }
     }
@@ -90,7 +91,7 @@ class PubgApiClient(
             restClient.get()
                 .uri(endpoints.matches, id)
                 .retrieve()
-                .body(MatchResponse::class.java)!!
+                .body<MatchResponse>()!!
         }
     }
 
@@ -104,7 +105,7 @@ class PubgApiClient(
                     if (response.statusCode.value() == 429) throw TooManyRequestsException()
                     throw PubgApiException("Lifetime stats failed: ${response.statusCode}")
                 }
-                .body(LifetimeStatsResponse::class.java)!!
+                .body<LifetimeStatsResponse>()!!
         }
     }
 

@@ -10,6 +10,7 @@ data class UpdateJob(
     @Id val id: ObjectId? = null,
     val accountId: String? = null,
     val playerName: String,
+    val matchCount: Int = 5,
     val status: JobStatus = JobStatus.QUEUED,
     val createdAt: Instant = Instant.now(),
     val startedAt: Instant? = null,

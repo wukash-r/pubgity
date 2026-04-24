@@ -40,7 +40,18 @@ data class MatchResponse(
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class MatchData(val id: String)
+data class MatchData(
+    val id: String,
+    val attributes: MatchAttributes? = null
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class MatchAttributes(
+    val createdAt: String? = null,
+    val gameMode: String? = null,
+    val mapName: String? = null,
+    val duration: Int = 0
+)
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class MatchIncluded(

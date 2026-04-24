@@ -29,8 +29,10 @@
            th:href="@{/players/{id}(id=${player.accountId})}"
            class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
             <span th:text="${player.playerName}"></span>
-            <span class="badge bg-primary rounded-pill"
-                  th:text="${player.lifetimeStats != null ? 'Stats available' : 'No stats'}"></span>
+            <span>
+                <span class="badge bg-secondary rounded-pill me-1" th:text="${#lists.size(player.matchIds)} + ' matches'"></span>
+                <span class="badge bg-primary rounded-pill" th:if="${player.lifetimeStats != null}">Stats</span>
+            </span>
         </a>
     </div>
 
