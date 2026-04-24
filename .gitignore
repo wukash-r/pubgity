@@ -42,3 +42,5 @@ out/
 ### HTTP Client ###
 http-client.private.env.json
 
+### Sample responses from the HTTP Client tests for local use only ###
+/src/main/resources/sample-response/
