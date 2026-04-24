@@ -1,3 +1,31 @@
 spring:
   application:
     name: pubgity
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/pubgity
+  security:
+    user:
+      name: admin
+      password: admin
+
+pubg:
+  api:
+    key: ${PUBG_API_KEY:your-api-key-here}
+    base-url: https://api.pubg.com/shards/steam
+    endpoints:
+      players: /players
+      matches: /matches/{matchId}
+      lifetime-stats: /players/{accountId}/seasons/lifetime
+    rate-limit:
+      limit-for-period: 10
+      limit-refresh-period: 60s
+      timeout-duration: 2m
+    retry:
+      max-attempts: 3
+      backoff: 30s
+    match-cache:
+      max-size: 500
+      ttl: 1h
+  cache:
+    player-stats-ttl: 7d
