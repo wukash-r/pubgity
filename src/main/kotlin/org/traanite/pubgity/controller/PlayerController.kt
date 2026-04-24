@@ -28,6 +28,7 @@ class PlayerController(
         } else {
             playerRepository.searchByPlayerName(filter).filter { it.lifetimeStats != null }
         }
+        logger.debug("Player list: filter='{}', found {} players with stats", filter ?: "", players.size)
         model.addAttribute("players", players)
         model.addAttribute("filter", filter ?: "")
         return "players"
@@ -35,11 +36,13 @@ class PlayerController(
 
     @GetMapping("/{accountId}")
     fun playerDetail(@PathVariable accountId: String, model: Model): String {
+        logger.info("Loading detail page for accountId: {}", accountId)
         val player = playerRepository.findByAccountId(accountId)
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Player not found")
 
         // Fetch recent matches to find participants
         val recentMatchIds = player.matchIds.take(10)
+        logger.debug("Fetching {} recent matches for player '{}'", recentMatchIds.size, player.playerName)
         val participantIds = mutableSetOf<String>()
 
         for (matchId in recentMatchIds) {
@@ -58,6 +61,10 @@ class PlayerController(
         // Load participants from DB (only those with stats)
         val participants = playerRepository.findByAccountIdIn(participantIds)
             .filter { it.lifetimeStats != null }
+        logger.info(
+            "Player '{}' detail: {} matches, {} unique participants, {} with stats in DB",
+            player.playerName, recentMatchIds.size, participantIds.size, participants.size
+        )
 
         // Compute average stats of participants for comparison
         val avgStats = computeAverageStats(participants)
@@ -110,5 +117,4 @@ data class AverageModeStat(
     val avgAssists: Double = 0.0,
     val sampleSize: Int = 0
 )
-
 

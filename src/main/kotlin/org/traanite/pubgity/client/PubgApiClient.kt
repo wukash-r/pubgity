@@ -10,7 +10,6 @@ import org.springframework.http.HttpStatusCode
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestClient
 import org.traanite.pubgity.config.PubgApiProperties
-import java.time.Duration
 
 @Service
 class PubgApiClient(
@@ -81,8 +80,13 @@ class PubgApiClient(
     }
 
     fun getMatch(matchId: String): MatchResponse {
+        val cached = matchCache.getIfPresent(matchId)
+        if (cached != null) {
+            logger.debug("Match cache hit: {}", matchId)
+            return cached
+        }
         return matchCache.get(matchId) { id ->
-            logger.debug("Fetching match: {}", id)
+            logger.info("Fetching match from API: {}", id)
             restClient.get()
                 .uri(endpoints.matches, id)
                 .retrieve()
@@ -105,6 +109,7 @@ class PubgApiClient(
     }
 
     private fun <T> rateLimitedCall(block: () -> T): T {
+        logger.debug("Acquiring rate limiter permit (available: {})", rateLimiter.metrics.availablePermissions)
         val rateLimited = RateLimiter.decorateCallable(rateLimiter) { block() }
         val retried = Retry.decorateCallable(retry, rateLimited)
         return retried.call()

@@ -1,6 +1,7 @@
 package org.traanite.pubgity.controller
 
 import org.bson.types.ObjectId
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.*
@@ -15,11 +16,15 @@ class AdminController(
     private val playerRepository: PlayerRepository,
     private val jobRepository: UpdateJobRepository
 ) {
+    private val logger = LoggerFactory.getLogger(javaClass)
 
     @GetMapping
     fun admin(model: Model): String {
-        model.addAttribute("players", playerRepository.findAll())
-        model.addAttribute("jobs", jobRepository.findAllByOrderByCreatedAtDesc())
+        val players = playerRepository.findAll()
+        val jobs = jobRepository.findAllByOrderByCreatedAtDesc()
+        logger.debug("Admin page loaded: {} players, {} jobs", players.size, jobs.size)
+        model.addAttribute("players", players)
+        model.addAttribute("jobs", jobs)
         return "admin"
     }
 
@@ -28,12 +33,16 @@ class AdminController(
         val trimmed = playerName.trim()
         if (trimmed.isNotBlank() && playerRepository.findByPlayerName(trimmed) == null) {
             playerRepository.save(Player(playerName = trimmed))
+            logger.info("Added player to watchlist: {}", trimmed)
+        } else {
+            logger.warn("Player '{}' already exists or name is blank, skipping add", trimmed)
         }
         return "redirect:/admin"
     }
 
     @PostMapping("/players/{id}/remove")
     fun removePlayer(@PathVariable id: String): String {
+        logger.info("Removing player with id: {}", id)
         playerRepository.deleteById(ObjectId(id))
         return "redirect:/admin"
     }
@@ -41,13 +50,13 @@ class AdminController(
     @PostMapping("/players/{id}/update")
     fun updatePlayer(@PathVariable id: String): String {
         val player = playerRepository.findById(ObjectId(id)).orElseThrow()
-        jobRepository.save(
+        val job = jobRepository.save(
             UpdateJob(
                 accountId = player.accountId,
                 playerName = player.playerName
             )
         )
+        logger.info("Queued update job {} for player '{}' (accountId={})", job.id, player.playerName, player.accountId)
         return "redirect:/admin"
     }
 }
-

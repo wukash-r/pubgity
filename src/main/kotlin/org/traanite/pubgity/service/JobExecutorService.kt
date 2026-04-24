@@ -8,7 +8,9 @@ import org.springframework.stereotype.Service
 import org.traanite.pubgity.client.PubgApiClient
 import org.traanite.pubgity.client.toModel
 import org.traanite.pubgity.config.PubgCacheProperties
-import org.traanite.pubgity.model.*
+import org.traanite.pubgity.model.JobStatus
+import org.traanite.pubgity.model.Player
+import org.traanite.pubgity.model.UpdateJob
 import org.traanite.pubgity.repository.PlayerRepository
 import org.traanite.pubgity.repository.UpdateJobRepository
 import java.time.Duration
@@ -36,6 +38,7 @@ class JobExecutorService(
     fun processNextJob() {
         val job = jobRepository.findFirstByStatusOrderByCreatedAtAsc(JobStatus.QUEUED) ?: return
         val jobId = job.id!!
+        logger.info("Picked up job {} for player '{}' (accountId={})", jobId, job.playerName, job.accountId)
 
         jobRepository.save(job.copy(status = JobStatus.RUNNING, startedAt = Instant.now()))
 
@@ -70,6 +73,7 @@ class JobExecutorService(
         val accountId = playerData.id
         val matchIds = playerData.relationships?.matches?.data?.map { it.id } ?: emptyList()
         val currentName = playerData.attributes.name
+        logger.info("Resolved player '{}' -> accountId={}, {} matches", currentName, accountId, matchIds.size)
 
         // Upsert player with accountId and matchIds (do NOT set lastUpdated)
         val existingPlayer = playerRepository.findByAccountId(accountId)
@@ -118,6 +122,7 @@ class JobExecutorService(
 
         // Step C: Fetch lifetime stats for real players
         val participantList = allParticipants.toList()
+        logger.info("Collected {} unique real participants from {} matches", participantList.size, matchIds.size)
         var fetched = 0
         var skipped = 0
 
