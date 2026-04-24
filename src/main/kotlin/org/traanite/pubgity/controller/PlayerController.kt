@@ -59,6 +59,17 @@ class PlayerController(
             val kd = aggregated.map { it.modeKD }
             val brpAll = aggregated.map { it.bestRankPoint }
             val brpNonZero = brpAll.filter { it > 0.0 }
+            val timeSurvived = aggregated.map { it.totalTimeSurvived }
+            val wins = aggregated.map { it.modeWins.toDouble() }
+            val rounds = aggregated.map { it.modeRoundsPlayed.toDouble() }
+            val hsKills = aggregated.map { it.modeHeadshotKills.toDouble() }
+            val top10s = aggregated.map { it.totalTop10s.toDouble() }
+
+            // Extract player's own snapshot from this match
+            val playerSnapshot = match.participants
+                .firstOrNull { it.accountId == accountId }
+                ?.lifetimeStats
+                ?.let { aggregateStats(it, modeExtractor) }
 
             PerMatchSkillData(
                 matchId = match.matchId,
@@ -81,13 +92,63 @@ class PlayerController(
                 maxBestRankPoint = max(brpNonZero),
                 medianBestRankPoint = median(brpNonZero),
                 avgBestRankPoint = avg(brpNonZero),
-                rankedPlayerCount = brpNonZero.size
+                rankedPlayerCount = brpNonZero.size,
+                minTimeSurvived = min(timeSurvived),
+                maxTimeSurvived = max(timeSurvived),
+                medianTimeSurvived = median(timeSurvived),
+                avgTimeSurvived = avg(timeSurvived),
+                minWins = min(wins),
+                maxWins = max(wins),
+                medianWins = median(wins),
+                avgWins = avg(wins),
+                minRoundsPlayed = min(rounds),
+                maxRoundsPlayed = max(rounds),
+                medianRoundsPlayed = median(rounds),
+                avgRoundsPlayed = avg(rounds),
+                minHeadshotKills = min(hsKills),
+                maxHeadshotKills = max(hsKills),
+                medianHeadshotKills = median(hsKills),
+                avgHeadshotKills = avg(hsKills),
+                minTop10s = min(top10s),
+                maxTop10s = max(top10s),
+                medianTop10s = median(top10s),
+                avgTop10s = avg(top10s),
+                playerSnapshotKills = playerSnapshot?.totalKills?.toDouble() ?: 0.0,
+                playerSnapshotDamage = playerSnapshot?.totalDamageDealt ?: 0.0,
+                playerSnapshotKD = playerSnapshot?.modeKD ?: 0.0,
+                playerSnapshotBestRankPoint = playerSnapshot?.bestRankPoint ?: 0.0,
+                playerSnapshotTimeSurvived = playerSnapshot?.totalTimeSurvived ?: 0.0,
+                playerSnapshotWins = playerSnapshot?.modeWins?.toDouble() ?: 0.0,
+                playerSnapshotRoundsPlayed = playerSnapshot?.modeRoundsPlayed?.toDouble() ?: 0.0,
+                playerSnapshotHeadshotKills = playerSnapshot?.modeHeadshotKills?.toDouble() ?: 0.0,
+                playerSnapshotTop10s = playerSnapshot?.totalTop10s?.toDouble() ?: 0.0
+            )
+        }
+
+        // Compute current aggregated stats for the player (all modes combined)
+        val playerAggregated = player.lifetimeStats?.let { stats ->
+            val allModes = listOfNotNull(
+                stats.gameModeStats.solo, stats.gameModeStats.soloFpp,
+                stats.gameModeStats.duo, stats.gameModeStats.duoFpp,
+                stats.gameModeStats.squad, stats.gameModeStats.squadFpp
+            )
+            if (allModes.isEmpty()) null
+            else PlayerAggregatedView(
+                totalKills = allModes.sumOf { it.kills },
+                totalDamage = allModes.sumOf { it.damageDealt },
+                totalTop10s = allModes.sumOf { it.top10s },
+                totalWins = allModes.sumOf { it.wins },
+                totalRoundsPlayed = allModes.sumOf { it.roundsPlayed },
+                totalHeadshotKills = allModes.sumOf { it.headshotKills },
+                totalTimeSurvived = allModes.sumOf { it.timeSurvived },
+                bestRankPoint = stats.bestRankPoint
             )
         }
 
         model.addAttribute("player", player)
         model.addAttribute("matches", matches)
         model.addAttribute("perMatchStats", perMatchStats)
+        model.addAttribute("playerAggregated", playerAggregated)
         return "player-detail"
     }
 
@@ -223,7 +284,36 @@ data class PerMatchSkillData(
     val maxBestRankPoint: Double,
     val medianBestRankPoint: Double,
     val avgBestRankPoint: Double,
-    val rankedPlayerCount: Int
+    val rankedPlayerCount: Int,
+    val minTimeSurvived: Double,
+    val maxTimeSurvived: Double,
+    val medianTimeSurvived: Double,
+    val avgTimeSurvived: Double,
+    val minWins: Double,
+    val maxWins: Double,
+    val medianWins: Double,
+    val avgWins: Double,
+    val minRoundsPlayed: Double,
+    val maxRoundsPlayed: Double,
+    val medianRoundsPlayed: Double,
+    val avgRoundsPlayed: Double,
+    val minHeadshotKills: Double,
+    val maxHeadshotKills: Double,
+    val medianHeadshotKills: Double,
+    val avgHeadshotKills: Double,
+    val minTop10s: Double,
+    val maxTop10s: Double,
+    val medianTop10s: Double,
+    val avgTop10s: Double,
+    val playerSnapshotKills: Double,
+    val playerSnapshotDamage: Double,
+    val playerSnapshotKD: Double,
+    val playerSnapshotBestRankPoint: Double,
+    val playerSnapshotTimeSurvived: Double,
+    val playerSnapshotWins: Double,
+    val playerSnapshotRoundsPlayed: Double,
+    val playerSnapshotHeadshotKills: Double,
+    val playerSnapshotTop10s: Double
 )
 
 data class ParticipantView(
@@ -238,4 +328,15 @@ data class ParticipantView(
     val timeSurvived: Double,
     val bestRankPoint: Double,
     val kd: Double
+)
+
+data class PlayerAggregatedView(
+    val totalKills: Int,
+    val totalDamage: Double,
+    val totalTop10s: Int,
+    val totalWins: Int,
+    val totalRoundsPlayed: Int,
+    val totalHeadshotKills: Int,
+    val totalTimeSurvived: Double,
+    val bestRankPoint: Double
 )

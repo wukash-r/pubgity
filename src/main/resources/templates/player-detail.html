@@ -22,6 +22,25 @@
         No lifetime stats available yet. Run an update job from the admin panel.
     </div>
 
+    <!-- Current Aggregated Stats -->
+    <div th:if="${playerAggregated != null}" class="mb-4">
+        <h3>Current Aggregated Stats (All Modes)</h3>
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered" style="max-width: 600px;">
+                <tbody>
+                <tr><td>Total Kills</td><td th:text="${playerAggregated.totalKills}"></td></tr>
+                <tr><td>Total Damage</td><td th:text="${#numbers.formatDecimal(playerAggregated.totalDamage, 1, 0)}"></td></tr>
+                <tr><td>Total Wins</td><td th:text="${playerAggregated.totalWins}"></td></tr>
+                <tr><td>Total Rounds Played</td><td th:text="${playerAggregated.totalRoundsPlayed}"></td></tr>
+                <tr><td>Total Top 10s</td><td th:text="${playerAggregated.totalTop10s}"></td></tr>
+                <tr><td>Total Headshot Kills</td><td th:text="${playerAggregated.totalHeadshotKills}"></td></tr>
+                <tr><td>Total Time Survived</td><td th:text="${#numbers.formatDecimal(playerAggregated.totalTimeSurvived / 3600, 1, 1)} + 'h'"></td></tr>
+                <tr><td>Best Rank Point</td><td th:text="${#numbers.formatDecimal(playerAggregated.bestRankPoint, 1, 1)}"></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <div th:if="${player.lifetimeStats != null}">
         <h3>Lifetime Stats by Game Mode</h3>
         <div class="table-responsive mb-4">
@@ -67,24 +86,12 @@
                 </tr>
                 <tr>
                     <td>Damage Dealt</td>
-                    <td th:text="${#numbers.formatDecimal(player.lifetimeStats.gameModeStats.solo?.damageDealt ?: 0, 1, 0)}">
-                        0
-                    </td>
-                    <td th:text="${#numbers.formatDecimal(player.lifetimeStats.gameModeStats.soloFpp?.damageDealt ?: 0, 1, 0)}">
-                        0
-                    </td>
-                    <td th:text="${#numbers.formatDecimal(player.lifetimeStats.gameModeStats.duo?.damageDealt ?: 0, 1, 0)}">
-                        0
-                    </td>
-                    <td th:text="${#numbers.formatDecimal(player.lifetimeStats.gameModeStats.duoFpp?.damageDealt ?: 0, 1, 0)}">
-                        0
-                    </td>
-                    <td th:text="${#numbers.formatDecimal(player.lifetimeStats.gameModeStats.squad?.damageDealt ?: 0, 1, 0)}">
-                        0
-                    </td>
-                    <td th:text="${#numbers.formatDecimal(player.lifetimeStats.gameModeStats.squadFpp?.damageDealt ?: 0, 1, 0)}">
-                        0
-                    </td>
+                    <td th:text="${#numbers.formatDecimal(player.lifetimeStats.gameModeStats.solo?.damageDealt ?: 0, 1, 0)}">0</td>
+                    <td th:text="${#numbers.formatDecimal(player.lifetimeStats.gameModeStats.soloFpp?.damageDealt ?: 0, 1, 0)}">0</td>
+                    <td th:text="${#numbers.formatDecimal(player.lifetimeStats.gameModeStats.duo?.damageDealt ?: 0, 1, 0)}">0</td>
+                    <td th:text="${#numbers.formatDecimal(player.lifetimeStats.gameModeStats.duoFpp?.damageDealt ?: 0, 1, 0)}">0</td>
+                    <td th:text="${#numbers.formatDecimal(player.lifetimeStats.gameModeStats.squad?.damageDealt ?: 0, 1, 0)}">0</td>
+                    <td th:text="${#numbers.formatDecimal(player.lifetimeStats.gameModeStats.squadFpp?.damageDealt ?: 0, 1, 0)}">0</td>
                 </tr>
                 <tr>
                     <td>Top 10s</td>
@@ -103,36 +110,30 @@
     <!-- Per-Match Skill Level Charts -->
     <div th:if="${!#lists.isEmpty(perMatchStats)}">
         <h3>Skill Level Across Recent Matches</h3>
-        <p class="text-muted"><small>Each point is one match. Stats are median/avg of all participants' lifetime stats
-            in that match's game mode.</small></p>
+        <p class="text-muted"><small>Each point is one match. Range = all participants. <strong style="color: #e6550d;">Orange line = player's snapshot at time of match was downloaded.</strong></small></p>
         <div class="row mb-4">
-            <div class="col-md-6">
-                <canvas id="matchKillsChart"></canvas>
-            </div>
-            <div class="col-md-6">
-                <canvas id="matchDamageChart"></canvas>
-            </div>
+            <div class="col-md-6"><canvas id="matchKillsChart"></canvas></div>
+            <div class="col-md-6"><canvas id="matchDamageChart"></canvas></div>
         </div>
         <div class="row mb-4">
-            <div class="col-md-6">
-                <canvas id="matchKDChart"></canvas>
-            </div>
-            <div class="col-md-6">
-                <canvas id="matchParticipantsChart"></canvas>
-            </div>
+            <div class="col-md-6"><canvas id="matchKDChart"></canvas></div>
+            <div class="col-md-6"><canvas id="matchTimeSurvivedChart"></canvas></div>
         </div>
         <div class="row mb-4">
-            <div class="col-md-6">
-                <canvas id="matchBotsChart"></canvas>
-            </div>
-            <div class="col-md-6">
-                <canvas id="matchBestRankChart"></canvas>
-            </div>
+            <div class="col-md-6"><canvas id="matchWinsChart"></canvas></div>
+            <div class="col-md-6"><canvas id="matchRoundsChart"></canvas></div>
         </div>
         <div class="row mb-4">
-            <div class="col-md-6">
-                <canvas id="matchRankedCountChart"></canvas>
-            </div>
+            <div class="col-md-6"><canvas id="matchHSKillsChart"></canvas></div>
+            <div class="col-md-6"><canvas id="matchTop10sChart"></canvas></div>
+        </div>
+        <div class="row mb-4">
+            <div class="col-md-6"><canvas id="matchBestRankChart"></canvas></div>
+            <div class="col-md-6"><canvas id="matchRankedCountChart"></canvas></div>
+        </div>
+        <div class="row mb-4">
+            <div class="col-md-6"><canvas id="matchParticipantsChart"></canvas></div>
+            <div class="col-md-6"><canvas id="matchBotsChart"></canvas></div>
         </div>
     </div>
 
@@ -191,10 +192,15 @@
     const medianBRP = /*[[${perMatchStats.![medianBestRankPoint]}]]*/ [];
     const avgBRP = /*[[${perMatchStats.![avgBestRankPoint]}]]*/ [];
     const rankedCounts = /*[[${perMatchStats.![rankedPlayerCount]}]]*/ [];
+    const playerKills = /*[[${perMatchStats.![playerSnapshotKills]}]]*/ [];
+    const playerDamage = /*[[${perMatchStats.![playerSnapshotDamage]}]]*/ [];
+    const playerKD = /*[[${perMatchStats.![playerSnapshotKD]}]]*/ [];
+    const playerBRP = /*[[${perMatchStats.![playerSnapshotBestRankPoint]}]]*/ [];
 
     const rangeStyle = (color) => ({borderColor: color, backgroundColor: color.replace('1)', '0.15)'), fill: '+1', tension: 0.2, borderWidth: 1, pointRadius: 2});
     const solidStyle = (color) => ({borderColor: color, fill: false, tension: 0.2, borderWidth: 2});
     const dashStyle = (color) => ({borderColor: color, fill: false, tension: 0.2, borderWidth: 2, borderDash: [5,5]});
+    const playerStyle = {borderColor: 'rgba(230,85,13,1)', fill: false, tension: 0.2, borderWidth: 3, pointRadius: 4, pointBackgroundColor: 'rgba(230,85,13,1)'};
 
     new Chart(document.getElementById('matchKillsChart'), {
         type: 'line',
@@ -204,7 +210,8 @@
                 {label: 'Min', data: minKills, ...rangeStyle('rgba(54,162,235,1)')},
                 {label: 'Max', data: maxKills, ...rangeStyle('rgba(54,162,235,1)'), fill: false},
                 {label: 'Median', data: medianKills, ...solidStyle('rgba(54,162,235,1)')},
-                {label: 'Avg', data: avgKills, ...dashStyle('rgba(255,99,132,1)')}
+                {label: 'Avg', data: avgKills, ...dashStyle('rgba(255,99,132,1)')},
+                {label: 'Player (snapshot)', data: playerKills, ...playerStyle}
             ]
         },
         options: {responsive: true, plugins: {title: {display: true, text: 'Participant Lifetime Kills (all modes)'}}}
@@ -218,7 +225,8 @@
                 {label: 'Min', data: minDamage, ...rangeStyle('rgba(75,192,192,1)')},
                 {label: 'Max', data: maxDamage, ...rangeStyle('rgba(75,192,192,1)'), fill: false},
                 {label: 'Median', data: medianDamage, ...solidStyle('rgba(75,192,192,1)')},
-                {label: 'Avg', data: avgDamage, ...dashStyle('rgba(255,159,64,1)')}
+                {label: 'Avg', data: avgDamage, ...dashStyle('rgba(255,159,64,1)')},
+                {label: 'Player (snapshot)', data: playerDamage, ...playerStyle}
             ]
         },
         options: {responsive: true, plugins: {title: {display: true, text: 'Participant Lifetime Damage (all modes)'}}}
@@ -232,28 +240,86 @@
                 {label: 'Min', data: minKD, ...rangeStyle('rgba(153,102,255,1)')},
                 {label: 'Max', data: maxKD, ...rangeStyle('rgba(153,102,255,1)'), fill: false},
                 {label: 'Median', data: medianKD, ...solidStyle('rgba(153,102,255,1)')},
-                {label: 'Avg', data: avgKD, ...dashStyle('rgba(255,205,86,1)')}
+                {label: 'Avg', data: avgKD, ...dashStyle('rgba(255,205,86,1)')},
+                {label: 'Player (snapshot)', data: playerKD, ...playerStyle}
             ]
         },
         options: {responsive: true, plugins: {title: {display: true, text: 'Participant K/D Ratio (match mode)'}}}
     });
 
-    new Chart(document.getElementById('matchParticipantsChart'), {
-        type: 'bar',
+    new Chart(document.getElementById('matchTimeSurvivedChart'), {
+        type: 'line',
         data: {
             labels: labels,
-            datasets: [{label: 'Participants with Stats', data: participantCounts, backgroundColor: 'rgba(54,162,235,0.5)'}]
+            datasets: [
+                {label: 'Min', data: /*[[${perMatchStats.![minTimeSurvived]}]]*/ [], ...rangeStyle('rgba(255,206,86,1)')},
+                {label: 'Max', data: /*[[${perMatchStats.![maxTimeSurvived]}]]*/ [], ...rangeStyle('rgba(255,206,86,1)'), fill: false},
+                {label: 'Median', data: /*[[${perMatchStats.![medianTimeSurvived]}]]*/ [], ...solidStyle('rgba(255,206,86,1)')},
+                {label: 'Avg', data: /*[[${perMatchStats.![avgTimeSurvived]}]]*/ [], ...dashStyle('rgba(75,192,192,1)')},
+                {label: 'Player (snapshot)', data: /*[[${perMatchStats.![playerSnapshotTimeSurvived]}]]*/ [], ...playerStyle}
+            ]
         },
-        options: {responsive: true, plugins: {title: {display: true, text: 'Participants with Lifetime Stats per Match'}}}
+        options: {responsive: true, plugins: {title: {display: true, text: 'Participant Time Survived (match mode)'}}}
     });
 
-    new Chart(document.getElementById('matchBotsChart'), {
-        type: 'bar',
+    new Chart(document.getElementById('matchWinsChart'), {
+        type: 'line',
         data: {
             labels: labels,
-            datasets: [{label: 'Bots', data: botCounts, backgroundColor: 'rgba(255,99,132,0.5)'}]
+            datasets: [
+                {label: 'Min', data: /*[[${perMatchStats.![minWins]}]]*/ [], ...rangeStyle('rgba(75,192,192,1)')},
+                {label: 'Max', data: /*[[${perMatchStats.![maxWins]}]]*/ [], ...rangeStyle('rgba(75,192,192,1)'), fill: false},
+                {label: 'Median', data: /*[[${perMatchStats.![medianWins]}]]*/ [], ...solidStyle('rgba(75,192,192,1)')},
+                {label: 'Avg', data: /*[[${perMatchStats.![avgWins]}]]*/ [], ...dashStyle('rgba(255,159,64,1)')},
+                {label: 'Player (snapshot)', data: /*[[${perMatchStats.![playerSnapshotWins]}]]*/ [], ...playerStyle}
+            ]
         },
-        options: {responsive: true, plugins: {title: {display: true, text: 'Bots per Match'}}}
+        options: {responsive: true, plugins: {title: {display: true, text: 'Participant Wins (match mode)'}}}
+    });
+
+    new Chart(document.getElementById('matchRoundsChart'), {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {label: 'Min', data: /*[[${perMatchStats.![minRoundsPlayed]}]]*/ [], ...rangeStyle('rgba(153,102,255,1)')},
+                {label: 'Max', data: /*[[${perMatchStats.![maxRoundsPlayed]}]]*/ [], ...rangeStyle('rgba(153,102,255,1)'), fill: false},
+                {label: 'Median', data: /*[[${perMatchStats.![medianRoundsPlayed]}]]*/ [], ...solidStyle('rgba(153,102,255,1)')},
+                {label: 'Avg', data: /*[[${perMatchStats.![avgRoundsPlayed]}]]*/ [], ...dashStyle('rgba(255,205,86,1)')},
+                {label: 'Player (snapshot)', data: /*[[${perMatchStats.![playerSnapshotRoundsPlayed]}]]*/ [], ...playerStyle}
+            ]
+        },
+        options: {responsive: true, plugins: {title: {display: true, text: 'Participant Rounds Played (match mode)'}}}
+    });
+
+    new Chart(document.getElementById('matchHSKillsChart'), {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {label: 'Min', data: /*[[${perMatchStats.![minHeadshotKills]}]]*/ [], ...rangeStyle('rgba(255,99,132,1)')},
+                {label: 'Max', data: /*[[${perMatchStats.![maxHeadshotKills]}]]*/ [], ...rangeStyle('rgba(255,99,132,1)'), fill: false},
+                {label: 'Median', data: /*[[${perMatchStats.![medianHeadshotKills]}]]*/ [], ...solidStyle('rgba(255,99,132,1)')},
+                {label: 'Avg', data: /*[[${perMatchStats.![avgHeadshotKills]}]]*/ [], ...dashStyle('rgba(54,162,235,1)')},
+                {label: 'Player (snapshot)', data: /*[[${perMatchStats.![playerSnapshotHeadshotKills]}]]*/ [], ...playerStyle}
+            ]
+        },
+        options: {responsive: true, plugins: {title: {display: true, text: 'Participant Headshot Kills (match mode)'}}}
+    });
+
+    new Chart(document.getElementById('matchTop10sChart'), {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {label: 'Min', data: /*[[${perMatchStats.![minTop10s]}]]*/ [], ...rangeStyle('rgba(153,102,255,1)')},
+                {label: 'Max', data: /*[[${perMatchStats.![maxTop10s]}]]*/ [], ...rangeStyle('rgba(153,102,255,1)'), fill: false},
+                {label: 'Median', data: /*[[${perMatchStats.![medianTop10s]}]]*/ [], ...solidStyle('rgba(153,102,255,1)')},
+                {label: 'Avg', data: /*[[${perMatchStats.![avgTop10s]}]]*/ [], ...dashStyle('rgba(255,205,86,1)')},
+                {label: 'Player (snapshot)', data: /*[[${perMatchStats.![playerSnapshotTop10s]}]]*/ [], ...playerStyle}
+            ]
+        },
+        options: {responsive: true, plugins: {title: {display: true, text: 'Participant Top 10s (match mode)'}}}
     });
 
     new Chart(document.getElementById('matchBestRankChart'), {
@@ -264,7 +330,8 @@
                 {label: 'Min', data: minBRP, ...rangeStyle('rgba(0,128,128,1)')},
                 {label: 'Max', data: maxBRP, ...rangeStyle('rgba(0,128,128,1)'), fill: false},
                 {label: 'Median', data: medianBRP, ...solidStyle('rgba(0,128,128,1)')},
-                {label: 'Avg', data: avgBRP, ...dashStyle('rgba(255,140,0,1)')}
+                {label: 'Avg', data: avgBRP, ...dashStyle('rgba(255,140,0,1)')},
+                {label: 'Player (snapshot)', data: playerBRP, ...playerStyle}
             ]
         },
         options: {responsive: true, plugins: {title: {display: true, text: 'Best Rank Point (non-zero only)'}}}
@@ -276,7 +343,25 @@
             labels: labels,
             datasets: [{label: 'Ranked Players (BRP > 0)', data: rankedCounts, backgroundColor: 'rgba(0,128,128,0.5)'}]
         },
-        options: {responsive: true, plugins: {title: {display: true, text: 'Players with Non-Zero Best Rank Point'}}}
+        options: {responsive: true, scales: {y: {ticks: {stepSize: 1}}}, plugins: {title: {display: true, text: 'Players with Non-Zero Best Rank Point'}}}
+    });
+
+    new Chart(document.getElementById('matchParticipantsChart'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{label: 'Participants with Stats', data: participantCounts, backgroundColor: 'rgba(54,162,235,0.5)'}]
+        },
+        options: {responsive: true, scales: {y: {ticks: {stepSize: 1}}}, plugins: {title: {display: true, text: 'Participants with Lifetime Stats per Match'}}}
+    });
+
+    new Chart(document.getElementById('matchBotsChart'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{label: 'Bots', data: botCounts, backgroundColor: 'rgba(255,99,132,0.5)'}]
+        },
+        options: {responsive: true, scales: {y: {ticks: {stepSize: 1}}}, plugins: {title: {display: true, text: 'Bots per Match'}}}
     });
 </script>
 </body>
