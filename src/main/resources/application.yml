@@ -1,17 +1,17 @@
 spring:
   application:
     name: pubgity
-  data:
-    mongodb:
-      uri: mongodb://localhost:27017/pubgity
   security:
-    user:
+    user: # todo
       name: admin
       password: admin
+  mongodb:
+    uri: mongodb://user:password@localhost:27017
+    database: pubgity
 
 pubg:
   api:
-    key: ${PUBG_API_KEY:your-api-key-here}
+    key: pubgApiKey
     base-url: https://api.pubg.com/shards/steam
     endpoints:
       players: /players
