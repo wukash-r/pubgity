@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.server.ResponseStatusException
 import org.traanite.pubgity.model.GameModeStats
+import org.traanite.pubgity.model.LifetimeStats
 import org.traanite.pubgity.model.ModeStats
 import org.traanite.pubgity.repository.MatchRepository
 import org.traanite.pubgity.repository.PlayerRepository
@@ -49,25 +50,38 @@ class PlayerController(
             val realParticipants = match.participants.filter { it.lifetimeStats != null }
             val modeExtractor = gameModeExtractor(match.gameMode)
 
-            val modeStatsList = realParticipants.mapNotNull { p ->
-                modeExtractor(p.lifetimeStats!!.gameModeStats)
-            }.filter { it.roundsPlayed > 0 }
+            val aggregated = realParticipants.mapNotNull { p ->
+                aggregateStats(p.lifetimeStats!!, modeExtractor)
+            }
 
-            val kills = modeStatsList.map { it.kills.toDouble() }
-            val damage = modeStatsList.map { it.damageDealt }
-            val kd = modeStatsList.map { if (it.roundsPlayed > 0) it.kills.toDouble() / it.roundsPlayed else 0.0 }
+            val kills = aggregated.map { it.totalKills.toDouble() }
+            val damage = aggregated.map { it.totalDamageDealt }
+            val kd = aggregated.map { it.modeKD }
+            val brpAll = aggregated.map { it.bestRankPoint }
+            val brpNonZero = brpAll.filter { it > 0.0 }
 
             PerMatchSkillData(
                 matchId = match.matchId,
                 label = "${match.gameMode} - ${match.mapName}",
                 participantCount = realParticipants.size,
                 botCount = match.botCount,
+                minKills = min(kills),
+                maxKills = max(kills),
                 medianKills = median(kills),
                 avgKills = avg(kills),
+                minDamage = min(damage),
+                maxDamage = max(damage),
                 medianDamage = median(damage),
                 avgDamage = avg(damage),
+                minKD = min(kd),
+                maxKD = max(kd),
                 medianKD = median(kd),
-                avgKD = avg(kd)
+                avgKD = avg(kd),
+                minBestRankPoint = min(brpNonZero),
+                maxBestRankPoint = max(brpNonZero),
+                medianBestRankPoint = median(brpNonZero),
+                avgBestRankPoint = avg(brpNonZero),
+                rankedPlayerCount = brpNonZero.size
             )
         }
 
@@ -93,17 +107,19 @@ class PlayerController(
         val participantsWithMode = match.participants
             .filter { it.lifetimeStats != null }
             .map { p ->
-                val ms = modeExtractor(p.lifetimeStats!!.gameModeStats)
+                val agg = aggregateStats(p.lifetimeStats!!, modeExtractor)
                 ParticipantView(
                     accountId = p.accountId,
                     playerName = p.playerName,
-                    kills = ms?.kills ?: 0,
-                    damage = ms?.damageDealt ?: 0.0,
-                    wins = ms?.wins ?: 0,
-                    roundsPlayed = ms?.roundsPlayed ?: 0,
-                    headshotKills = ms?.headshotKills ?: 0,
-                    top10s = ms?.top10s ?: 0,
-                    kd = if ((ms?.roundsPlayed ?: 0) > 0) (ms!!.kills.toDouble() / ms.roundsPlayed) else 0.0
+                    kills = agg?.totalKills ?: 0,
+                    damage = agg?.totalDamageDealt ?: 0.0,
+                    wins = agg?.modeWins ?: 0,
+                    roundsPlayed = agg?.modeRoundsPlayed ?: 0,
+                    headshotKills = agg?.modeHeadshotKills ?: 0,
+                    top10s = agg?.totalTop10s ?: 0,
+                    timeSurvived = agg?.totalTimeSurvived ?: 0.0,
+                    bestRankPoint = agg?.bestRankPoint ?: 0.0,
+                    kd = agg?.modeKD ?: 0.0
                 )
             }
             .sortedByDescending { it.kills }
@@ -137,19 +153,77 @@ class PlayerController(
         if (values.isEmpty()) return 0.0
         return values.sum() / values.size
     }
+
+    private fun min(values: List<Double>): Double = values.minOrNull() ?: 0.0
+
+    private fun max(values: List<Double>): Double = values.maxOrNull() ?: 0.0
+
+    /** Aggregates stats across all game modes for summable fields, keeps mode-specific for ratio fields. */
+    private fun aggregateStats(
+        stats: LifetimeStats,
+        modeExtractor: (GameModeStats) -> ModeStats?
+    ): AggregatedParticipantStats? {
+        val allModes = listOfNotNull(
+            stats.gameModeStats.solo,
+            stats.gameModeStats.soloFpp,
+            stats.gameModeStats.duo,
+            stats.gameModeStats.duoFpp,
+            stats.gameModeStats.squad,
+            stats.gameModeStats.squadFpp
+        )
+        if (allModes.isEmpty()) return null
+
+        val modeSpecific = modeExtractor(stats.gameModeStats)
+
+        return AggregatedParticipantStats(
+            totalKills = allModes.sumOf { it.kills },
+            totalDamageDealt = allModes.sumOf { it.damageDealt },
+            totalTop10s = allModes.sumOf { it.top10s },
+            totalTimeSurvived = allModes.sumOf { it.timeSurvived },
+            bestRankPoint = stats.bestRankPoint,
+            modeWins = modeSpecific?.wins ?: 0,
+            modeRoundsPlayed = modeSpecific?.roundsPlayed ?: 0,
+            modeHeadshotKills = modeSpecific?.headshotKills ?: 0,
+            modeKD = if ((modeSpecific?.roundsPlayed ?: 0) > 0)
+                modeSpecific!!.kills.toDouble() / modeSpecific.roundsPlayed else 0.0
+        )
+    }
 }
+
+data class AggregatedParticipantStats(
+    val totalKills: Int,
+    val totalDamageDealt: Double,
+    val totalTop10s: Int,
+    val totalTimeSurvived: Double,
+    val bestRankPoint: Double,
+    val modeWins: Int,
+    val modeRoundsPlayed: Int,
+    val modeHeadshotKills: Int,
+    val modeKD: Double
+)
 
 data class PerMatchSkillData(
     val matchId: String,
     val label: String,
     val participantCount: Int,
     val botCount: Int,
+    val minKills: Double,
+    val maxKills: Double,
     val medianKills: Double,
     val avgKills: Double,
+    val minDamage: Double,
+    val maxDamage: Double,
     val medianDamage: Double,
     val avgDamage: Double,
+    val minKD: Double,
+    val maxKD: Double,
     val medianKD: Double,
-    val avgKD: Double
+    val avgKD: Double,
+    val minBestRankPoint: Double,
+    val maxBestRankPoint: Double,
+    val medianBestRankPoint: Double,
+    val avgBestRankPoint: Double,
+    val rankedPlayerCount: Int
 )
 
 data class ParticipantView(
@@ -161,5 +235,7 @@ data class ParticipantView(
     val roundsPlayed: Int,
     val headshotKills: Int,
     val top10s: Int,
+    val timeSurvived: Double,
+    val bestRankPoint: Double,
     val kd: Double
 )

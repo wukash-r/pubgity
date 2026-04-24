@@ -25,13 +25,15 @@
             <tr>
                 <th>#</th>
                 <th>Player</th>
-                <th>Kills</th>
-                <th>Damage</th>
-                <th>K/D</th>
-                <th>Wins</th>
-                <th>Rounds</th>
-                <th>HS Kills</th>
-                <th>Top 10s</th>
+                <th>Kills (all)</th>
+                <th>Damage (all)</th>
+                <th>K/D (mode)</th>
+                <th>Wins (mode)</th>
+                <th>Rounds (mode)</th>
+                <th>HS Kills (mode)</th>
+                <th>Top 10s (all)</th>
+                <th>Time Survived (all)</th>
+                <th>Best Rank Point</th>
             </tr>
             </thead>
             <tbody>
@@ -51,6 +53,8 @@
                 <td th:text="${p.roundsPlayed}"></td>
                 <td th:text="${p.headshotKills}"></td>
                 <td th:text="${p.top10s}"></td>
+                <td th:text="${#numbers.formatDecimal(p.timeSurvived / 3600, 1, 1)} + 'h'"></td>
+                <td th:text="${#numbers.formatDecimal(p.bestRankPoint, 1, 0)}"></td>
             </tr>
             </tbody>
         </table>

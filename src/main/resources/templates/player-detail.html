@@ -125,6 +125,14 @@
             <div class="col-md-6">
                 <canvas id="matchBotsChart"></canvas>
             </div>
+            <div class="col-md-6">
+                <canvas id="matchBestRankChart"></canvas>
+            </div>
+        </div>
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <canvas id="matchRankedCountChart"></canvas>
+            </div>
         </div>
     </div>
 
@@ -164,38 +172,42 @@
 
 <script th:if="${!#lists.isEmpty(perMatchStats)}" th:inline="javascript">
     const labels = /*[[${perMatchStats.![label]}]]*/ [];
+    const minKills = /*[[${perMatchStats.![minKills]}]]*/ [];
+    const maxKills = /*[[${perMatchStats.![maxKills]}]]*/ [];
     const medianKills = /*[[${perMatchStats.![medianKills]}]]*/ [];
     const avgKills = /*[[${perMatchStats.![avgKills]}]]*/ [];
+    const minDamage = /*[[${perMatchStats.![minDamage]}]]*/ [];
+    const maxDamage = /*[[${perMatchStats.![maxDamage]}]]*/ [];
     const medianDamage = /*[[${perMatchStats.![medianDamage]}]]*/ [];
     const avgDamage = /*[[${perMatchStats.![avgDamage]}]]*/ [];
+    const minKD = /*[[${perMatchStats.![minKD]}]]*/ [];
+    const maxKD = /*[[${perMatchStats.![maxKD]}]]*/ [];
     const medianKD = /*[[${perMatchStats.![medianKD]}]]*/ [];
     const avgKD = /*[[${perMatchStats.![avgKD]}]]*/ [];
     const participantCounts = /*[[${perMatchStats.![participantCount]}]]*/ [];
     const botCounts = /*[[${perMatchStats.![botCount]}]]*/ [];
+    const minBRP = /*[[${perMatchStats.![minBestRankPoint]}]]*/ [];
+    const maxBRP = /*[[${perMatchStats.![maxBestRankPoint]}]]*/ [];
+    const medianBRP = /*[[${perMatchStats.![medianBestRankPoint]}]]*/ [];
+    const avgBRP = /*[[${perMatchStats.![avgBestRankPoint]}]]*/ [];
+    const rankedCounts = /*[[${perMatchStats.![rankedPlayerCount]}]]*/ [];
+
+    const rangeStyle = (color) => ({borderColor: color, backgroundColor: color.replace('1)', '0.15)'), fill: '+1', tension: 0.2, borderWidth: 1, pointRadius: 2});
+    const solidStyle = (color) => ({borderColor: color, fill: false, tension: 0.2, borderWidth: 2});
+    const dashStyle = (color) => ({borderColor: color, fill: false, tension: 0.2, borderWidth: 2, borderDash: [5,5]});
 
     new Chart(document.getElementById('matchKillsChart'), {
         type: 'line',
         data: {
             labels: labels,
             datasets: [
-                {
-                    label: 'Median Kills',
-                    data: medianKills,
-                    borderColor: 'rgba(54,162,235,1)',
-                    fill: false,
-                    tension: 0.2
-                },
-                {
-                    label: 'Avg Kills',
-                    data: avgKills,
-                    borderColor: 'rgba(255,99,132,1)',
-                    fill: false,
-                    tension: 0.2,
-                    borderDash: [5, 5]
-                }
+                {label: 'Min', data: minKills, ...rangeStyle('rgba(54,162,235,1)')},
+                {label: 'Max', data: maxKills, ...rangeStyle('rgba(54,162,235,1)'), fill: false},
+                {label: 'Median', data: medianKills, ...solidStyle('rgba(54,162,235,1)')},
+                {label: 'Avg', data: avgKills, ...dashStyle('rgba(255,99,132,1)')}
             ]
         },
-        options: {responsive: true, plugins: {title: {display: true, text: 'Participant Lifetime Kills per Match'}}}
+        options: {responsive: true, plugins: {title: {display: true, text: 'Participant Lifetime Kills (all modes)'}}}
     });
 
     new Chart(document.getElementById('matchDamageChart'), {
@@ -203,24 +215,13 @@
         data: {
             labels: labels,
             datasets: [
-                {
-                    label: 'Median Damage',
-                    data: medianDamage,
-                    borderColor: 'rgba(75,192,192,1)',
-                    fill: false,
-                    tension: 0.2
-                },
-                {
-                    label: 'Avg Damage',
-                    data: avgDamage,
-                    borderColor: 'rgba(255,159,64,1)',
-                    fill: false,
-                    tension: 0.2,
-                    borderDash: [5, 5]
-                }
+                {label: 'Min', data: minDamage, ...rangeStyle('rgba(75,192,192,1)')},
+                {label: 'Max', data: maxDamage, ...rangeStyle('rgba(75,192,192,1)'), fill: false},
+                {label: 'Median', data: medianDamage, ...solidStyle('rgba(75,192,192,1)')},
+                {label: 'Avg', data: avgDamage, ...dashStyle('rgba(255,159,64,1)')}
             ]
         },
-        options: {responsive: true, plugins: {title: {display: true, text: 'Participant Lifetime Damage per Match'}}}
+        options: {responsive: true, plugins: {title: {display: true, text: 'Participant Lifetime Damage (all modes)'}}}
     });
 
     new Chart(document.getElementById('matchKDChart'), {
@@ -228,34 +229,22 @@
         data: {
             labels: labels,
             datasets: [
-                {label: 'Median K/D', data: medianKD, borderColor: 'rgba(153,102,255,1)', fill: false, tension: 0.2},
-                {
-                    label: 'Avg K/D',
-                    data: avgKD,
-                    borderColor: 'rgba(255,205,86,1)',
-                    fill: false,
-                    tension: 0.2,
-                    borderDash: [5, 5]
-                }
+                {label: 'Min', data: minKD, ...rangeStyle('rgba(153,102,255,1)')},
+                {label: 'Max', data: maxKD, ...rangeStyle('rgba(153,102,255,1)'), fill: false},
+                {label: 'Median', data: medianKD, ...solidStyle('rgba(153,102,255,1)')},
+                {label: 'Avg', data: avgKD, ...dashStyle('rgba(255,205,86,1)')}
             ]
         },
-        options: {responsive: true, plugins: {title: {display: true, text: 'Participant K/D Ratio per Match'}}}
+        options: {responsive: true, plugins: {title: {display: true, text: 'Participant K/D Ratio (match mode)'}}}
     });
 
     new Chart(document.getElementById('matchParticipantsChart'), {
         type: 'bar',
         data: {
             labels: labels,
-            datasets: [{
-                label: 'Participants with Stats',
-                data: participantCounts,
-                backgroundColor: 'rgba(54,162,235,0.5)'
-            }]
+            datasets: [{label: 'Participants with Stats', data: participantCounts, backgroundColor: 'rgba(54,162,235,0.5)'}]
         },
-        options: {
-            responsive: true,
-            plugins: {title: {display: true, text: 'Participants with Lifetime Stats per Match'}}
-        }
+        options: {responsive: true, plugins: {title: {display: true, text: 'Participants with Lifetime Stats per Match'}}}
     });
 
     new Chart(document.getElementById('matchBotsChart'), {
@@ -265,6 +254,29 @@
             datasets: [{label: 'Bots', data: botCounts, backgroundColor: 'rgba(255,99,132,0.5)'}]
         },
         options: {responsive: true, plugins: {title: {display: true, text: 'Bots per Match'}}}
+    });
+
+    new Chart(document.getElementById('matchBestRankChart'), {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {label: 'Min', data: minBRP, ...rangeStyle('rgba(0,128,128,1)')},
+                {label: 'Max', data: maxBRP, ...rangeStyle('rgba(0,128,128,1)'), fill: false},
+                {label: 'Median', data: medianBRP, ...solidStyle('rgba(0,128,128,1)')},
+                {label: 'Avg', data: avgBRP, ...dashStyle('rgba(255,140,0,1)')}
+            ]
+        },
+        options: {responsive: true, plugins: {title: {display: true, text: 'Best Rank Point (non-zero only)'}}}
+    });
+
+    new Chart(document.getElementById('matchRankedCountChart'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{label: 'Ranked Players (BRP > 0)', data: rankedCounts, backgroundColor: 'rgba(0,128,128,0.5)'}]
+        },
+        options: {responsive: true, plugins: {title: {display: true, text: 'Players with Non-Zero Best Rank Point'}}}
     });
 </script>
 </body>
