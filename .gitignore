@@ -38,3 +38,7 @@ out/
 
 ### Kotlin ###
 .kotlin
+
+### HTTP Client ###
+http-client.private.env.json
+

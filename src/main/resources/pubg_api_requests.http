@@ -1,0 +1,27 @@
+
+### Filter players by names
+GET https://api.pubg.com/shards/steam/players
+    ?filter[playerNames]=Ally_Ax
+Accept: application/json
+Authorization: Bearer {{api_key}}
+
+### Player by id
+GET https://api.pubg.com/shards/steam/players/account.6e9639698c034fbc9424404be339cc27
+Accept: application/json
+Authorization: Bearer {{api_key}}
+
+### Match by id
+GET https://api.pubg.com/shards/steam/matches/7cea28bb-1684-4a5b-a9e1-fd89167bab26
+Accept: application/json
+
+### Multiple players by ids
+GET https://api.pubg.com/shards/steam/players
+    ?filter[playerIds]=account.6e9639698c034fbc9424404be339cc27,account.51dad8a9c85644fa948870ee19b93878
+Accept: application/json
+Authorization: Bearer {{api_key}}
+
+### Lifetime stats by player id
+GET https://api.pubg.com/shards/steam/players/account.51dad8a9c85644fa948870ee19b93878/seasons/lifetime
+Accept: application/json
+Authorization: Bearer {{api_key}}
+
