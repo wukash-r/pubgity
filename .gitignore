@@ -42,5 +42,8 @@ out/
 ### HTTP Client ###
 http-client.private.env.json
 
+### Spring local profile ###
+application-local.yml
+
 ### Sample responses from the HTTP Client tests for local use only ###
 /src/main/resources/sample-response/

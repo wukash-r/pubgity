@@ -57,18 +57,29 @@ data class MatchAttributes(
 data class MatchIncluded(
     val type: String,
     val id: String,
-    val attributes: MatchIncludedAttributes? = null
+    val attributes: MatchIncludedAttributes? = null,
+    val relationships: MatchIncludedRelationships? = null
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class MatchIncludedAttributes(
-    val stats: ParticipantStats? = null
+    val stats: IncludedStats? = null,
+    val won: String? = null
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class ParticipantStats(
+data class IncludedStats(
+    // participant stats
     val playerId: String? = null,
-    val name: String? = null
+    val name: String? = null,
+    // roster stats
+    val rank: Int? = null,
+    val teamId: Int? = null
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class MatchIncludedRelationships(
+    val participants: RelationshipData? = null
 )
 
 // --- Lifetime stats DTOs ---

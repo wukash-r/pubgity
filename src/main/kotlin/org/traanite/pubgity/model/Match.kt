@@ -15,6 +15,13 @@ data class Match(
     val mapName: String,
     val duration: Int,
     val botCount: Int = 0,
+    val rosters: List<MatchRoster> = emptyList()
+)
+
+data class MatchRoster(
+    val rosterId: String,
+    val rank: Int,
+    val won: Boolean,
     val participants: List<MatchParticipantSnapshot> = emptyList()
 )
 

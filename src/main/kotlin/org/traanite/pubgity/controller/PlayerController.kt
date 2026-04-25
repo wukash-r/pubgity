@@ -42,12 +42,13 @@ class PlayerController(
         val player = playerRepository.findByAccountId(accountId)
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Player not found")
 
-        val matches = matchRepository.findByMatchIdIn(player.matchIds)
+        val matches = matchRepository.findByMatchIdIn(player.matches.map { it.matchId })
             .sortedByDescending { it.createdAt }
         logger.info("Player '{}': loaded {} matches from DB", player.playerName, matches.size)
 
         val perMatchStats = matches.map { match ->
-            val realParticipants = match.participants.filter { it.lifetimeStats != null }
+            val allParticipants = match.rosters.flatMap { it.participants }
+            val realParticipants = allParticipants.filter { it.lifetimeStats != null }
             val modeExtractor = gameModeExtractor(match.gameMode)
 
             val aggregated = realParticipants.mapNotNull { p ->
@@ -66,7 +67,7 @@ class PlayerController(
             val top10s = aggregated.map { it.totalTop10s.toDouble() }
 
             // Extract player's own snapshot from this match
-            val playerSnapshot = match.participants
+            val playerSnapshot = allParticipants
                 .firstOrNull { it.accountId == accountId }
                 ?.lifetimeStats
                 ?.let { aggregateStats(it, modeExtractor) }
@@ -165,7 +166,7 @@ class PlayerController(
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Match not found")
 
         val modeExtractor = gameModeExtractor(match.gameMode)
-        val participantsWithMode = match.participants
+        val participantsWithMode = match.rosters.flatMap { it.participants }
             .filter { it.lifetimeStats != null }
             .map { p ->
                 val agg = aggregateStats(p.lifetimeStats!!, modeExtractor)

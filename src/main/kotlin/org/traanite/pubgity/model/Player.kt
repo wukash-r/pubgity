@@ -13,8 +13,12 @@ data class Player(
     val playerName: String,
     @Indexed(unique = true, sparse = true) val accountId: String? = null,
     val lastUpdated: Instant? = null,
-    val matchIds: List<String> = emptyList(),
+    val matches: List<PlayerMatchRef> = emptyList(),
     val lifetimeStats: LifetimeStats? = null
+)
+
+data class PlayerMatchRef(
+    val matchId: String
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)

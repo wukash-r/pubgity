@@ -8,5 +8,6 @@ import org.traanite.pubgity.model.UpdateJob
 interface UpdateJobRepository : MongoRepository<UpdateJob, ObjectId> {
     fun findFirstByStatusOrderByCreatedAtAsc(status: JobStatus): UpdateJob?
     fun findAllByOrderByCreatedAtDesc(): List<UpdateJob>
+    fun existsByStatus(status: JobStatus): Boolean
 }
 

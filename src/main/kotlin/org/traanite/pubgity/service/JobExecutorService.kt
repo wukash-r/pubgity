@@ -35,6 +35,11 @@ class JobExecutorService(
 
     @Scheduled(fixedDelay = 5000)
     fun processNextJob() {
+        if (jobRepository.existsByStatus(JobStatus.RUNNING)) {
+            logger.debug("A job is already running, skipping")
+            return
+        }
+
         val job = jobRepository.findFirstByStatusOrderByCreatedAtAsc(JobStatus.QUEUED) ?: return
         val jobId = job.id!!
         logger.info("Picked up job {} for player '{}' (matchCount={})", jobId, job.playerName, job.matchCount)
@@ -64,11 +69,13 @@ class JobExecutorService(
             selectedMatches.size, storedMatchIds.size, newMatches.size
         )
 
-        mergePlayerMatchIds(resolvedPlayer.accountId, resolvedPlayer.playerName, job.playerName, selectedMatches)
+        // todo we shouldn't merge already here, do it in the last step - update matches for ALL the participants, including player that we triggered the job for
+        mergePlayerMatches(resolvedPlayer.accountId, resolvedPlayer.playerName, job.playerName, selectedMatches)
+
         val participants = collectParticipants(newMatches)
         fetchLifetimeStats(jobId, participants)
         saveMatchSnapshots(jobId, newMatches)
-        updateMatchIdsForAllParticipants(jobId, newMatches)
+        updateMatchesForAllParticipants(jobId, newMatches)
     }
 
     // --- Step A: Resolve player identity ---
@@ -88,6 +95,8 @@ class JobExecutorService(
             pubgApiClient.getPlayerByName(job.playerName)
         }
 
+        // todo save player id if not in db
+
         val accountId = playerData.id
         val matchIds = playerData.relationships?.matches?.data?.map { it.id } ?: emptyList()
         val name = playerData.attributes.name
@@ -102,15 +111,25 @@ class JobExecutorService(
 
     // --- Step B: Fetch match metadata (not rate-limited) ---
 
+    private data class FetchedRoster(
+        val rosterId: String,
+        val rank: Int,
+        val won: Boolean,
+        val participants: Map<String, String> // accountId -> playerName
+    )
+
     private data class FetchedMatch(
         val matchId: String,
         val createdAt: Instant,
         val gameMode: String,
         val mapName: String,
         val duration: Int,
-        val realParticipants: Map<String, String>,
+        val rosters: List<FetchedRoster>,
         val botCount: Int
-    )
+    ) {
+        val realParticipants: Map<String, String>
+            get() = rosters.flatMap { it.participants.entries }.associate { it.key to it.value }
+    }
 
     private fun fetchAllMatchMetadata(jobId: ObjectId, matchIds: List<String>): List<FetchedMatch> {
         updateProgress(jobId, "Fetching match metadata (0/${matchIds.size})...")
@@ -126,7 +145,8 @@ class JobExecutorService(
         val attrs = matchResponse.data.attributes
         val createdAtStr = attrs?.createdAt ?: return null
 
-        val participants = mutableMapOf<String, String>()
+        // Build participant lookup: participantId -> (accountId, playerName)
+        val participantLookup = mutableMapOf<String, Pair<String, String>>()
         var botCount = 0
 
         matchResponse.included
@@ -137,10 +157,32 @@ class JobExecutorService(
                 val pname = stats.name ?: return@forEach
 
                 when {
-                    pid.startsWith("account.") -> participants[pid] = pname
+                    pid.startsWith("account.") -> participantLookup[included.id] = pid to pname
                     pid.startsWith("ai.") -> botCount++
                 }
             }
+
+        // Build rosters
+        val rosters = matchResponse.included
+            .filter { it.type == "roster" }
+            .map { roster ->
+                val rosterStats = roster.attributes?.stats
+                val rank = rosterStats?.rank ?: 0
+                val won = roster.attributes?.won == "true"
+                val rosterParticipantIds = roster.relationships?.participants?.data?.map { it.id } ?: emptyList()
+
+                val rosterParticipants = rosterParticipantIds
+                    .mapNotNull { participantLookup[it] }
+                    .associate { it.first to it.second }
+
+                FetchedRoster(
+                    rosterId = roster.id,
+                    rank = rank,
+                    won = won,
+                    participants = rosterParticipants
+                )
+            }
+            .filter { it.participants.isNotEmpty() }
 
         return FetchedMatch(
             matchId = matchId,
@@ -148,14 +190,14 @@ class JobExecutorService(
             gameMode = attrs.gameMode ?: "unknown",
             mapName = attrs.mapName ?: "unknown",
             duration = attrs.duration,
-            realParticipants = participants.toMap(),
+            rosters = rosters,
             botCount = botCount
         )
     }
 
     // --- Step C: Merge match IDs into player document ---
 
-    private fun mergePlayerMatchIds(
+    private fun mergePlayerMatches(
         accountId: String,
         currentName: String,
         originalName: String,
@@ -165,17 +207,20 @@ class JobExecutorService(
             ?: playerRepository.findByPlayerName(originalName)
             ?: Player(playerName = currentName)
 
-        val newMatchIds = selectedMatches.map { it.matchId }.toSet()
-        val mergedMatchIds = (existingPlayer.matchIds.toSet() + newMatchIds).toList()
+        val existingMatchIds = existingPlayer.matches.map { it.matchId }.toSet()
+        val newRefs = selectedMatches
+            .filter { it.matchId !in existingMatchIds }
+            .map { PlayerMatchRef(matchId = it.matchId) }
+        val mergedMatches = existingPlayer.matches + newRefs
 
         playerRepository.save(
             existingPlayer.copy(
                 accountId = accountId,
                 playerName = currentName,
-                matchIds = mergedMatchIds
+                matches = mergedMatches
             )
         )
-        logger.info("Player '{}' now has {} total matchIds", currentName, mergedMatchIds.size)
+        logger.info("Player '{}' now has {} total matches", currentName, mergedMatches.size)
     }
 
     // --- Step D: Collect unique participants ---
@@ -238,11 +283,19 @@ class JobExecutorService(
         updateProgress(jobId, "Saving match snapshots...")
 
         matches.forEach { fetched ->
-            val snapshots = fetched.realParticipants.map { (pid, pname) ->
-                MatchParticipantSnapshot(
-                    accountId = pid,
-                    playerName = pname,
-                    lifetimeStats = playerRepository.findByAccountId(pid)?.lifetimeStats
+            val rosterSnapshots = fetched.rosters.map { roster ->
+                val participantSnapshots = roster.participants.map { (pid, pname) ->
+                    MatchParticipantSnapshot(
+                        accountId = pid,
+                        playerName = pname,
+                        lifetimeStats = playerRepository.findByAccountId(pid)?.lifetimeStats
+                    )
+                }
+                MatchRoster(
+                    rosterId = roster.rosterId,
+                    rank = roster.rank,
+                    won = roster.won,
+                    participants = participantSnapshots
                 )
             }
 
@@ -256,33 +309,34 @@ class JobExecutorService(
                     mapName = fetched.mapName,
                     duration = fetched.duration,
                     botCount = fetched.botCount,
-                    participants = snapshots
+                    rosters = rosterSnapshots
                 )
             )
-            logger.debug("Saved match {} with {} participants", fetched.matchId, snapshots.size)
+            logger.debug("Saved match {} with {} rosters", fetched.matchId, rosterSnapshots.size)
         }
         logger.info("Saved {} new match snapshots", matches.size)
     }
 
     // --- Step G: Propagate match IDs to all participants ---
 
-    private fun updateMatchIdsForAllParticipants(jobId: ObjectId, matches: List<FetchedMatch>) {
-        updateProgress(jobId, "Updating matchIds for all participants...")
+    private fun updateMatchesForAllParticipants(jobId: ObjectId, matches: List<FetchedMatch>) {
+        updateProgress(jobId, "Updating matches for all participants...")
 
         val participantMatchMap = buildParticipantMatchMap(matches)
         var updatedCount = 0
 
         participantMatchMap.forEach { (pid, matchIdsToAdd) ->
             val playerDoc = playerRepository.findByAccountId(pid) ?: return@forEach
-            val currentIds = playerDoc.matchIds.toSet()
+            val currentIds = playerDoc.matches.map { it.matchId }.toSet()
             val newIds = matchIdsToAdd - currentIds
 
             if (newIds.isNotEmpty()) {
-                playerRepository.save(playerDoc.copy(matchIds = (currentIds + newIds).toList()))
+                val newRefs = newIds.map { PlayerMatchRef(matchId = it) }
+                playerRepository.save(playerDoc.copy(matches = playerDoc.matches + newRefs))
                 updatedCount++
             }
         }
-        logger.info("Updated matchIds for {} participants", updatedCount)
+        logger.info("Updated matches for {} participants", updatedCount)
     }
 
     private fun buildParticipantMatchMap(matches: List<FetchedMatch>): Map<String, Set<String>> {

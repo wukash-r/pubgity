@@ -90,7 +90,7 @@
                         <span th:if="${player.lastUpdated != null}" th:text="${player.lastUpdated}"></span>
                         <span th:if="${player.lastUpdated == null}" class="text-muted">Never</span>
                     </td>
-                    <td th:text="${player.matchIds.size()}"></td>
+                    <td th:text="${player.matches.size()}"></td>
                     <td>
                         <form method="post" th:action="@{/admin/players/{id}/update(id=${player.id})}"
                               style="display:inline" class="d-flex align-items-center gap-1">

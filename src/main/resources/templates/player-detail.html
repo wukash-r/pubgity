@@ -159,7 +159,7 @@
                 <td th:text="${match.gameMode}"></td>
                 <td th:text="${match.mapName}"></td>
                 <td th:text="${match.duration + 's'}"></td>
-                <td th:text="${#lists.size(match.participants)}"></td>
+                <td th:text="${#lists.size(match.rosters)}"></td>
                 <td th:text="${match.botCount}"></td>
                 <td>
                     <a th:href="@{/players/{aid}/matches/{mid}(aid=${player.accountId},mid=${match.matchId})}"
