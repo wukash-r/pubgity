@@ -14,7 +14,7 @@ class JobController(
     private val jobService: JobService
 ) {
     companion object {
-        private val logger = LoggerFactory.getLogger(javaClass)
+        private val logger = LoggerFactory.getLogger(JobController::class.java)
     }
 
     @GetMapping

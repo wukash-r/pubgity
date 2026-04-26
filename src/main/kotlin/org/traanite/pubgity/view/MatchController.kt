@@ -20,7 +20,7 @@ class MatchController(
     private val statsAggregationService: StatsAggregationService
 ) {
     companion object {
-        private val logger = LoggerFactory.getLogger(javaClass)
+        private val logger = LoggerFactory.getLogger(MatchController::class.java)
     }
 
     @GetMapping("/{matchId}")

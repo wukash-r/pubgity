@@ -17,7 +17,7 @@ class ForkJobExecutor(
     private val matchDataFetcher: MatchDataFetcher
 ) {
     companion object {
-        private val logger = LoggerFactory.getLogger(javaClass)
+        private val logger = LoggerFactory.getLogger(ForkJobExecutor::class.java)
         private val jobType: JobType = JobType.FORK
     }
 

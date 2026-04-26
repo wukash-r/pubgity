@@ -11,7 +11,7 @@ class PlayerResolver(
 ) {
 
     companion object {
-        private val logger = LoggerFactory.getLogger(javaClass)
+        private val logger = LoggerFactory.getLogger(PlayerResolver::class.java)
     }
 
     fun resolve(accountId: String?, playerName: String): ResolvedPlayer {

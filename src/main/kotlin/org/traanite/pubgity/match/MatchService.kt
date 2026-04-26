@@ -8,7 +8,7 @@ class MatchService(
     private val matchRepository: MatchRepository
 ) {
     companion object {
-        private val logger = LoggerFactory.getLogger(javaClass)
+        private val logger = LoggerFactory.getLogger(MatchService::class.java)
     }
 
     fun findByMatchId(matchId: String): Match? = matchRepository.findByMatchId(matchId)

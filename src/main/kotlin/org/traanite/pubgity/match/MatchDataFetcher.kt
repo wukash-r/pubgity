@@ -12,7 +12,7 @@ class MatchDataFetcher(
     private val pubgApiClient: PubgApiClient
 ) {
     companion object {
-        private val logger = LoggerFactory.getLogger(javaClass)
+        private val logger = LoggerFactory.getLogger(MatchDataFetcher::class.java)
     }
 
     fun collectNewMatches(matchCount: Int, matchIds: List<String>): List<FetchedMatch> {

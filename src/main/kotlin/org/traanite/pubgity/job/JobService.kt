@@ -11,7 +11,7 @@ class JobService(
     private val playerService: PlayerService
 ) {
     companion object {
-        private val logger = LoggerFactory.getLogger(javaClass)
+        private val logger = LoggerFactory.getLogger(JobService::class.java)
     }
 
     fun getJobs(): List<UpdateJob> = jobRepository.findAllByOrderByCreatedAtDesc()

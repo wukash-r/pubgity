@@ -22,7 +22,7 @@ class PlayerController(
     private val statsAggregationService: StatsAggregationService
 ) {
     companion object {
-        private val logger = LoggerFactory.getLogger(javaClass)
+        private val logger = LoggerFactory.getLogger(PlayerController::class.java)
     }
 
     @GetMapping

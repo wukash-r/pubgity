@@ -20,7 +20,7 @@ class SingleMatchJobExecutor(
     private val lifetimeStatsUpdater: LifetimeStatsUpdater
 ) {
     companion object {
-        private val logger = LoggerFactory.getLogger(javaClass)
+        private val logger = LoggerFactory.getLogger(SingleMatchJobExecutor::class.java)
         private val jobType: JobType = JobType.SINGLE_MATCH
     }
     // todo what to do about jobs that hangs while running

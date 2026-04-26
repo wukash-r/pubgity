@@ -15,7 +15,7 @@ class LifetimeStatsUpdater(
 ) {
 
     companion object {
-        private val logger = LoggerFactory.getLogger(javaClass)
+        private val logger = LoggerFactory.getLogger(LifetimeStatsUpdater::class.java)
     }
 
     fun updateLifetimeStats(accountId: String, playerName: String): LifetimeStatsUpdateResult {
