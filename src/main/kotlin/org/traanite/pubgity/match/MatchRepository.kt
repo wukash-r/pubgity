@@ -1,8 +1,7 @@
-package org.traanite.pubgity.repository
+package org.traanite.pubgity.match
 
 import org.bson.types.ObjectId
 import org.springframework.data.mongodb.repository.MongoRepository
-import org.traanite.pubgity.model.Match
 
 interface MatchRepository : MongoRepository<Match, ObjectId> {
     fun findByMatchId(matchId: String): Match?

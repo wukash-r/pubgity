@@ -1,9 +1,8 @@
-package org.traanite.pubgity.repository
+package org.traanite.pubgity.player
 
 import org.bson.types.ObjectId
 import org.springframework.data.mongodb.repository.MongoRepository
 import org.springframework.data.mongodb.repository.Query
-import org.traanite.pubgity.model.Player
 
 interface PlayerRepository : MongoRepository<Player, ObjectId> {
     fun findByAccountId(accountId: String): Player?

@@ -1,4 +1,4 @@
-package org.traanite.pubgity.client
+package org.traanite.pubgity.pubgapi
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -74,7 +74,29 @@ data class IncludedStats(
     val name: String? = null,
     // roster stats
     val rank: Int? = null,
-    val teamId: Int? = null
+    val teamId: Int? = null,
+    // per-match participant stats
+    @JsonProperty("DBNOs") val dBNOs: Int = 0,
+    val assists: Int = 0,
+    val boosts: Int = 0,
+    val damageDealt: Double = 0.0,
+    val deathType: String = "",
+    val headshotKills: Int = 0,
+    val heals: Int = 0,
+    val killPlace: Int = 0,
+    val killStreaks: Int = 0,
+    val kills: Int = 0,
+    val longestKill: Double = 0.0,
+    val revives: Int = 0,
+    val rideDistance: Double = 0.0,
+    val roadKills: Int = 0,
+    val swimDistance: Double = 0.0,
+    val teamKills: Int = 0,
+    val timeSurvived: Double = 0.0,
+    val vehicleDestroys: Int = 0,
+    val walkDistance: Double = 0.0,
+    val weaponsAcquired: Int = 0,
+    val winPlace: Int = 0
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)

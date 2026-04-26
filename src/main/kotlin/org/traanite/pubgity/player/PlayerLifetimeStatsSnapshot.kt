@@ -1,24 +1,19 @@
-package org.traanite.pubgity.model
+package org.traanite.pubgity.player
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import org.bson.types.ObjectId
 import org.springframework.data.annotation.Id
-import org.springframework.data.mongodb.core.index.Indexed
+import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.Instant
 
-@Document(collection = "players")
-data class Player(
+@Document(collection = "player_lifetime_stats")
+@CompoundIndex(name = "accountId_capturedAt", def = "{'accountId': 1, 'capturedAt': -1}")
+data class PlayerLifetimeStatsSnapshot(
     @Id val id: ObjectId? = null,
-    val playerName: String,
-    @Indexed(unique = true, sparse = true) val accountId: String? = null,
-    val lastUpdated: Instant? = null,
-    val matches: List<PlayerMatchRef> = emptyList(),
-    val lifetimeStats: LifetimeStats? = null
-)
-
-data class PlayerMatchRef(
-    val matchId: String
+    val accountId: String,
+    val capturedAt: Instant = Instant.now(),
+    val stats: LifetimeStats
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)

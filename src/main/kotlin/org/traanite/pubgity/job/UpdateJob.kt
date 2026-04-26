@@ -1,4 +1,4 @@
-package org.traanite.pubgity.model
+package org.traanite.pubgity.job
 
 import org.bson.types.ObjectId
 import org.springframework.data.annotation.Id
@@ -20,6 +20,6 @@ data class UpdateJob(
 )
 
 enum class JobStatus {
-    QUEUED, RUNNING, COMPLETED, FAILED
+    QUEUED, RUNNING, COMPLETED, FAILED, CANCELLED
 }
 

@@ -1,4 +1,4 @@
-package org.traanite.pubgity.config
+package org.traanite.pubgity.pubgapi
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.time.Duration
@@ -22,19 +22,13 @@ data class PubgApiProperties(
         val matches: String = "/matches/{matchId}",
         val lifetimeStats: String = "/players/{accountId}/seasons/lifetime"
     )
-
     data class RetryProperties(
         val maxAttempts: Int = 3,
         val backoff: Duration = Duration.ofSeconds(30)
     )
-
     data class MatchCacheProperties(
         val maxSize: Long = 500,
         val ttl: Duration = Duration.ofHours(1)
     )
 }
 
-@ConfigurationProperties(prefix = "pubg.cache")
-data class PubgCacheProperties(
-    val playerStatsTtl: Duration = Duration.ofDays(7)
-)

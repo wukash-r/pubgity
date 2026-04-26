@@ -1,4 +1,4 @@
-package org.traanite.pubgity.client
+package org.traanite.pubgity.pubgapi
 
 import com.github.benmanes.caffeine.cache.Caffeine
 import io.github.resilience4j.ratelimiter.RateLimiter
@@ -10,7 +10,6 @@ import org.springframework.http.HttpStatusCode
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.body
-import org.traanite.pubgity.config.PubgApiProperties
 
 @Service
 class PubgApiClient(
@@ -116,3 +115,4 @@ class PubgApiClient(
         return retried.call()
     }
 }
+

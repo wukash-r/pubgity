@@ -13,13 +13,13 @@
     <h1 th:text="${player.playerName}">Player Name</h1>
     <p class="text-muted">
         <small th:text="'Account: ' + ${player.accountId}"></small><br>
-        <small th:text="'Last updated: ' + (${player.lastUpdated} != null ? ${player.lastUpdated} : 'Never')"></small><br>
+        <small th:text="'Last stats snapshot: ' + (${latestStats} != null ? ${latestStats.capturedAt} : 'Never')"></small><br>
         <small th:text="${#lists.size(matches)} + ' matches loaded'"></small>
     </p>
 
     <!-- Lifetime Stats -->
-    <div th:if="${player.lifetimeStats == null}" class="alert alert-warning">
-        No lifetime stats available yet. Run an update job from the admin panel.
+    <div th:if="${latestStats == null}" class="alert alert-warning">
+        No lifetime stats available yet. Run an update job from the jobs panel.
     </div>
 
     <!-- Current Aggregated Stats -->
@@ -41,7 +41,7 @@
         </div>
     </div>
 
-    <div th:if="${player.lifetimeStats != null}">
+    <div th:if="${latestStats != null}">
         <h3>Lifetime Stats by Game Mode</h3>
         <div class="table-responsive mb-4">
             <table class="table table-sm table-striped">
@@ -59,48 +59,48 @@
                 <tbody>
                 <tr>
                     <td>Rounds Played</td>
-                    <td th:text="${player.lifetimeStats.gameModeStats.solo?.roundsPlayed ?: 0}">0</td>
-                    <td th:text="${player.lifetimeStats.gameModeStats.soloFpp?.roundsPlayed ?: 0}">0</td>
-                    <td th:text="${player.lifetimeStats.gameModeStats.duo?.roundsPlayed ?: 0}">0</td>
-                    <td th:text="${player.lifetimeStats.gameModeStats.duoFpp?.roundsPlayed ?: 0}">0</td>
-                    <td th:text="${player.lifetimeStats.gameModeStats.squad?.roundsPlayed ?: 0}">0</td>
-                    <td th:text="${player.lifetimeStats.gameModeStats.squadFpp?.roundsPlayed ?: 0}">0</td>
+                    <td th:text="${latestStats.stats.gameModeStats.solo?.roundsPlayed ?: 0}">0</td>
+                    <td th:text="${latestStats.stats.gameModeStats.soloFpp?.roundsPlayed ?: 0}">0</td>
+                    <td th:text="${latestStats.stats.gameModeStats.duo?.roundsPlayed ?: 0}">0</td>
+                    <td th:text="${latestStats.stats.gameModeStats.duoFpp?.roundsPlayed ?: 0}">0</td>
+                    <td th:text="${latestStats.stats.gameModeStats.squad?.roundsPlayed ?: 0}">0</td>
+                    <td th:text="${latestStats.stats.gameModeStats.squadFpp?.roundsPlayed ?: 0}">0</td>
                 </tr>
                 <tr>
                     <td>Kills</td>
-                    <td th:text="${player.lifetimeStats.gameModeStats.solo?.kills ?: 0}">0</td>
-                    <td th:text="${player.lifetimeStats.gameModeStats.soloFpp?.kills ?: 0}">0</td>
-                    <td th:text="${player.lifetimeStats.gameModeStats.duo?.kills ?: 0}">0</td>
-                    <td th:text="${player.lifetimeStats.gameModeStats.duoFpp?.kills ?: 0}">0</td>
-                    <td th:text="${player.lifetimeStats.gameModeStats.squad?.kills ?: 0}">0</td>
-                    <td th:text="${player.lifetimeStats.gameModeStats.squadFpp?.kills ?: 0}">0</td>
+                    <td th:text="${latestStats.stats.gameModeStats.solo?.kills ?: 0}">0</td>
+                    <td th:text="${latestStats.stats.gameModeStats.soloFpp?.kills ?: 0}">0</td>
+                    <td th:text="${latestStats.stats.gameModeStats.duo?.kills ?: 0}">0</td>
+                    <td th:text="${latestStats.stats.gameModeStats.duoFpp?.kills ?: 0}">0</td>
+                    <td th:text="${latestStats.stats.gameModeStats.squad?.kills ?: 0}">0</td>
+                    <td th:text="${latestStats.stats.gameModeStats.squadFpp?.kills ?: 0}">0</td>
                 </tr>
                 <tr>
                     <td>Wins</td>
-                    <td th:text="${player.lifetimeStats.gameModeStats.solo?.wins ?: 0}">0</td>
-                    <td th:text="${player.lifetimeStats.gameModeStats.soloFpp?.wins ?: 0}">0</td>
-                    <td th:text="${player.lifetimeStats.gameModeStats.duo?.wins ?: 0}">0</td>
-                    <td th:text="${player.lifetimeStats.gameModeStats.duoFpp?.wins ?: 0}">0</td>
-                    <td th:text="${player.lifetimeStats.gameModeStats.squad?.wins ?: 0}">0</td>
-                    <td th:text="${player.lifetimeStats.gameModeStats.squadFpp?.wins ?: 0}">0</td>
+                    <td th:text="${latestStats.stats.gameModeStats.solo?.wins ?: 0}">0</td>
+                    <td th:text="${latestStats.stats.gameModeStats.soloFpp?.wins ?: 0}">0</td>
+                    <td th:text="${latestStats.stats.gameModeStats.duo?.wins ?: 0}">0</td>
+                    <td th:text="${latestStats.stats.gameModeStats.duoFpp?.wins ?: 0}">0</td>
+                    <td th:text="${latestStats.stats.gameModeStats.squad?.wins ?: 0}">0</td>
+                    <td th:text="${latestStats.stats.gameModeStats.squadFpp?.wins ?: 0}">0</td>
                 </tr>
                 <tr>
                     <td>Damage Dealt</td>
-                    <td th:text="${#numbers.formatDecimal(player.lifetimeStats.gameModeStats.solo?.damageDealt ?: 0, 1, 0)}">0</td>
-                    <td th:text="${#numbers.formatDecimal(player.lifetimeStats.gameModeStats.soloFpp?.damageDealt ?: 0, 1, 0)}">0</td>
-                    <td th:text="${#numbers.formatDecimal(player.lifetimeStats.gameModeStats.duo?.damageDealt ?: 0, 1, 0)}">0</td>
-                    <td th:text="${#numbers.formatDecimal(player.lifetimeStats.gameModeStats.duoFpp?.damageDealt ?: 0, 1, 0)}">0</td>
-                    <td th:text="${#numbers.formatDecimal(player.lifetimeStats.gameModeStats.squad?.damageDealt ?: 0, 1, 0)}">0</td>
-                    <td th:text="${#numbers.formatDecimal(player.lifetimeStats.gameModeStats.squadFpp?.damageDealt ?: 0, 1, 0)}">0</td>
+                    <td th:text="${#numbers.formatDecimal(latestStats.stats.gameModeStats.solo?.damageDealt ?: 0, 1, 0)}">0</td>
+                    <td th:text="${#numbers.formatDecimal(latestStats.stats.gameModeStats.soloFpp?.damageDealt ?: 0, 1, 0)}">0</td>
+                    <td th:text="${#numbers.formatDecimal(latestStats.stats.gameModeStats.duo?.damageDealt ?: 0, 1, 0)}">0</td>
+                    <td th:text="${#numbers.formatDecimal(latestStats.stats.gameModeStats.duoFpp?.damageDealt ?: 0, 1, 0)}">0</td>
+                    <td th:text="${#numbers.formatDecimal(latestStats.stats.gameModeStats.squad?.damageDealt ?: 0, 1, 0)}">0</td>
+                    <td th:text="${#numbers.formatDecimal(latestStats.stats.gameModeStats.squadFpp?.damageDealt ?: 0, 1, 0)}">0</td>
                 </tr>
                 <tr>
                     <td>Top 10s</td>
-                    <td th:text="${player.lifetimeStats.gameModeStats.solo?.top10s ?: 0}">0</td>
-                    <td th:text="${player.lifetimeStats.gameModeStats.soloFpp?.top10s ?: 0}">0</td>
-                    <td th:text="${player.lifetimeStats.gameModeStats.duo?.top10s ?: 0}">0</td>
-                    <td th:text="${player.lifetimeStats.gameModeStats.duoFpp?.top10s ?: 0}">0</td>
-                    <td th:text="${player.lifetimeStats.gameModeStats.squad?.top10s ?: 0}">0</td>
-                    <td th:text="${player.lifetimeStats.gameModeStats.squadFpp?.top10s ?: 0}">0</td>
+                    <td th:text="${latestStats.stats.gameModeStats.solo?.top10s ?: 0}">0</td>
+                    <td th:text="${latestStats.stats.gameModeStats.soloFpp?.top10s ?: 0}">0</td>
+                    <td th:text="${latestStats.stats.gameModeStats.duo?.top10s ?: 0}">0</td>
+                    <td th:text="${latestStats.stats.gameModeStats.duoFpp?.top10s ?: 0}">0</td>
+                    <td th:text="${latestStats.stats.gameModeStats.squad?.top10s ?: 0}">0</td>
+                    <td th:text="${latestStats.stats.gameModeStats.squadFpp?.top10s ?: 0}">0</td>
                 </tr>
                 </tbody>
             </table>

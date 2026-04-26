@@ -13,7 +13,7 @@ class SecurityConfig {
         http
             .authorizeHttpRequests { auth ->
                 auth
-                    .requestMatchers("/admin/**").authenticated()
+                    .requestMatchers("/jobs/**").authenticated()
                     .anyRequest().permitAll()
             }
             .formLogin(Customizer.withDefaults())

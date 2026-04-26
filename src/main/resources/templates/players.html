@@ -31,7 +31,6 @@
             <span th:text="${player.playerName}"></span>
             <span>
                 <span class="badge bg-secondary rounded-pill me-1" th:text="${#lists.size(player.matches)} + ' matches'"></span>
-                <span class="badge bg-primary rounded-pill" th:if="${player.lifetimeStats != null}">Stats</span>
             </span>
         </a>
     </div>

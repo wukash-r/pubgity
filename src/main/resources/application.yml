@@ -27,5 +27,5 @@ pubg:
     match-cache:
       max-size: 500
       ttl: 1h
-  cache:
-    player-stats-ttl: 7d
+  job:
+    stats-ttl: 7d
