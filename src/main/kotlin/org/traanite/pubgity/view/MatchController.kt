@@ -1,4 +1,4 @@
-package org.traanite.pubgity.match
+package org.traanite.pubgity.view
 
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.server.ResponseStatusException
+import org.traanite.pubgity.match.MatchService
 import org.traanite.pubgity.player.PlayerService
 import org.traanite.pubgity.player.StatsAggregationService
 
@@ -18,7 +19,9 @@ class MatchController(
     private val playerService: PlayerService,
     private val statsAggregationService: StatsAggregationService
 ) {
-    private val logger = LoggerFactory.getLogger(javaClass)
+    companion object {
+        private val logger = LoggerFactory.getLogger(javaClass)
+    }
 
     @GetMapping("/{matchId}")
     fun matchDetail(
@@ -60,4 +63,19 @@ class MatchController(
         return "match-detail"
     }
 }
+
+data class ParticipantView(
+    val accountId: String,
+    val playerName: String,
+    val kills: Int,
+    val placeTaken: Int,
+    val damage: Double,
+    val wins: Int,
+    val roundsPlayed: Int,
+    val headshotKills: Int,
+    val top10s: Int,
+    val timeSurvived: Double,
+    val bestRankPoint: Double,
+    val kd: Double
+)
 

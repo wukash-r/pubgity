@@ -1,4 +1,4 @@
-package org.traanite.pubgity.player
+package org.traanite.pubgity.view
 
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.server.ResponseStatusException
 import org.traanite.pubgity.match.MatchService
+import org.traanite.pubgity.player.PlayerService
+import org.traanite.pubgity.player.StatsAggregationService
+import java.time.Instant
 
 @Controller
 @RequestMapping("/players")
@@ -18,7 +21,9 @@ class PlayerController(
     private val matchService: MatchService,
     private val statsAggregationService: StatsAggregationService
 ) {
-    private val logger = LoggerFactory.getLogger(javaClass)
+    companion object {
+        private val logger = LoggerFactory.getLogger(javaClass)
+    }
 
     @GetMapping
     fun listPlayers(@RequestParam(required = false) filter: String?, model: Model): String {
@@ -70,3 +75,14 @@ class PlayerController(
     }
 }
 
+
+data class PlayerMatchView(
+    val matchId: String,
+    val createdAt: Instant,
+    val gameMode: String,
+    val mapName: String,
+    val duration: Int,
+    val botCount: Int = 0,
+    val playerCount: Int,
+    val placeTaken: Int
+)

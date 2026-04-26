@@ -1,17 +1,20 @@
-package org.traanite.pubgity.job
+package org.traanite.pubgity.view
 
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.*
+import org.traanite.pubgity.job.JobService
 
 @Controller
 @RequestMapping("/jobs")
 class JobController(
     private val jobService: JobService
 ) {
-    private val logger = LoggerFactory.getLogger(javaClass)
+    companion object {
+        private val logger = LoggerFactory.getLogger(javaClass)
+    }
 
     @GetMapping
     fun jobs(model: Model): String {
@@ -49,4 +52,3 @@ class JobController(
         return "redirect:/jobs"
     }
 }
-

@@ -10,7 +10,7 @@ data class Player(
     @Id val id: ObjectId? = null,
     val playerName: String,
     @Indexed(unique = true, sparse = true) val accountId: String? = null,
-    val matches: List<PlayerMatchRef> = emptyList()
+    val matches: Set<PlayerMatchRef> = emptySet()
 )
 
 data class PlayerMatchRef(

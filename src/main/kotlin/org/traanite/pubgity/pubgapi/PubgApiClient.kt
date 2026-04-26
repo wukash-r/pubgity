@@ -16,7 +16,9 @@ class PubgApiClient(
     apiProperties: PubgApiProperties,
     restClientBuilder: RestClient.Builder
 ) {
-    private val logger = LoggerFactory.getLogger(javaClass)
+    companion object {
+        private val logger = LoggerFactory.getLogger(javaClass)
+    }
 
     private val endpoints = apiProperties.endpoints
 

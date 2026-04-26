@@ -7,7 +7,9 @@ import org.springframework.stereotype.Service
 class MatchService(
     private val matchRepository: MatchRepository
 ) {
-    private val logger = LoggerFactory.getLogger(javaClass)
+    companion object {
+        private val logger = LoggerFactory.getLogger(javaClass)
+    }
 
     fun findByMatchId(matchId: String): Match? = matchRepository.findByMatchId(matchId)
 

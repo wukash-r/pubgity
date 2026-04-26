@@ -10,7 +10,9 @@ class PlayerService(
     private val playerRepository: PlayerRepository,
     private val lifetimeStatsRepository: PlayerLifetimeStatsRepository
 ) {
-    private val logger = LoggerFactory.getLogger(javaClass)
+    companion object {
+        private val logger = LoggerFactory.getLogger(javaClass)
+    }
 
     fun findAll(): List<Player> = playerRepository.findAll()
 
