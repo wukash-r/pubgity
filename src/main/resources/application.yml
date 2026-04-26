@@ -8,7 +8,10 @@ spring:
   mongodb:
     uri: mongodb://user:password@localhost:27017
     database: pubgity
-
+  task:
+    scheduling:
+      pool:
+        size: 5
 pubg:
   api:
     key: pubgApiKey

@@ -10,7 +10,10 @@ data class UpdateJob(
     @Id val id: ObjectId? = null,
     val accountId: String? = null,
     val playerName: String,
-    val matchCount: Int = 5,
+    val matchCount: Int? = null,
+    val matchId: String? = null,
+
+    val jobType: JobType,
     val status: JobStatus = JobStatus.QUEUED,
     val createdAt: Instant = Instant.now(),
     val startedAt: Instant? = null,
@@ -21,5 +24,9 @@ data class UpdateJob(
 
 enum class JobStatus {
     QUEUED, RUNNING, COMPLETED, FAILED, CANCELLED
+}
+
+enum class JobType {
+    FORK, SINGLE_MATCH
 }
 

@@ -27,7 +27,57 @@
 
     <!-- Job Queue -->
     <div class="card mb-4">
-        <div class="card-header">Job Queue</div>
+        <div class="card-header">Match Download Job Queue</div>
+        <div class="card-body">
+            <table class="table table-sm">
+                <thead>
+                <tr>
+                    <th>Player</th>
+                    <th>Match ID</th>
+                    <th>Status</th>
+                    <th>Progress</th>
+                    <th>Created</th>
+                    <th>Started</th>
+                    <th>Completed</th>
+                    <th>Error</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="job : ${matchJobs}" th:classappend="${job.status.name() == 'FAILED' ? 'table-danger' :
+                    (job.status.name() == 'RUNNING' ? 'table-info' :
+                    (job.status.name() == 'COMPLETED' ? 'table-success' :
+                    (job.status.name() == 'CANCELLED' ? 'table-warning' : '')))}">
+                    <td th:text="${job.playerName}"></td>
+                    <td th:text="${job.matchId}"></td>
+                    <td><span class="badge"
+                              th:classappend="${job.status.name() == 'QUEUED' ? 'bg-secondary' :
+                              (job.status.name() == 'RUNNING' ? 'bg-primary' :
+                              (job.status.name() == 'COMPLETED' ? 'bg-success' :
+                              (job.status.name() == 'CANCELLED' ? 'bg-warning' : 'bg-danger')))}"
+                              th:text="${job.status}"></span></td>
+                    <td><small th:text="${job.progress}"></small></td>
+                    <td><small th:text="${job.createdAt}"></small></td>
+                    <td><small th:text="${job.startedAt}"></small></td>
+                    <td><small th:text="${job.completedAt}"></small></td>
+                    <td><small th:text="${job.errorMessage}" class="text-danger"></small></td>
+                    <td>
+                        <form th:if="${job.status.name() == 'QUEUED' || job.status.name() == 'RUNNING'}"
+                              method="post" th:action="@{/jobs/{id}/cancel(id=${job.id})}" style="display:inline">
+                            <button type="submit" class="btn btn-sm btn-warning"
+                                    onclick="return confirm('Cancel this job?')">Cancel</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <p th:if="${#lists.isEmpty(matchJobs)}" class="text-muted">No jobs yet.</p>
+        </div>
+    </div>
+
+    <!-- Job Queue -->
+    <div class="card mb-4">
+        <div class="card-header">Fork Job Queue</div>
         <div class="card-body">
             <table class="table table-sm">
                 <thead>
@@ -44,7 +94,7 @@
                 </tr>
                 </thead>
                 <tbody>
-                <tr th:each="job : ${jobs}" th:classappend="${job.status.name() == 'FAILED' ? 'table-danger' :
+                <tr th:each="job : ${forkJobs}" th:classappend="${job.status.name() == 'FAILED' ? 'table-danger' :
                     (job.status.name() == 'RUNNING' ? 'table-info' :
                     (job.status.name() == 'COMPLETED' ? 'table-success' :
                     (job.status.name() == 'CANCELLED' ? 'table-warning' : '')))}">
@@ -71,7 +121,7 @@
                 </tr>
                 </tbody>
             </table>
-            <p th:if="${#lists.isEmpty(jobs)}" class="text-muted">No jobs yet.</p>
+            <p th:if="${#lists.isEmpty(forkJobs)}" class="text-muted">No jobs yet.</p>
         </div>
     </div>
 

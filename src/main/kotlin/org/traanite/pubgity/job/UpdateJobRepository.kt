@@ -4,8 +4,8 @@ import org.bson.types.ObjectId
 import org.springframework.data.mongodb.repository.MongoRepository
 
 interface UpdateJobRepository : MongoRepository<UpdateJob, ObjectId> {
-    fun findFirstByStatusOrderByCreatedAtAsc(status: JobStatus): UpdateJob?
+    fun findFirstByJobTypeAndStatusOrderByCreatedAtAsc(jobType: JobType, status: JobStatus): UpdateJob?
     fun findAllByOrderByCreatedAtDesc(): List<UpdateJob>
-    fun existsByStatus(status: JobStatus): Boolean
+    fun existsByJobTypeAndStatus(jobType: JobType, status: JobStatus): Boolean
 }
 

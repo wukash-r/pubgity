@@ -22,6 +22,7 @@ class JobService(
             UpdateJob(
                 accountId = accountId,
                 playerName = playerName,
+                jobType = JobType.FORK,
                 matchCount = clampedCount
             )
         )

@@ -6,6 +6,7 @@ import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.*
 import org.traanite.pubgity.job.JobService
+import org.traanite.pubgity.job.JobType
 
 @Controller
 @RequestMapping("/jobs")
@@ -22,7 +23,8 @@ class JobController(
         val jobs = jobService.getJobs()
         logger.debug("Jobs page loaded: {} players, {} jobs", players.size, jobs.size)
         model.addAttribute("players", players)
-        model.addAttribute("jobs", jobs)
+        model.addAttribute("matchJobs", jobs.filter { it.jobType == JobType.SINGLE_MATCH })
+        model.addAttribute("forkJobs", jobs.filter { it.jobType == JobType.FORK })
         return "jobs"
     }
 

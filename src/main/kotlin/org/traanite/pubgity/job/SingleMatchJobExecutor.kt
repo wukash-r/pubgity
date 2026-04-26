@@ -5,32 +5,36 @@ import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.traanite.pubgity.match.*
-import org.traanite.pubgity.player.*
+import org.traanite.pubgity.player.LifetimeStatsUpdateResult
+import org.traanite.pubgity.player.LifetimeStatsUpdater
+import org.traanite.pubgity.player.PlayerService
 import org.traanite.pubgity.pubgapi.toParticipantLifetimeStats
 import java.time.Instant
 
 @Service
-class JobExecutorService(
+class SingleMatchJobExecutor(
     private val jobRepository: UpdateJobRepository,
     private val playerService: PlayerService,
     private val matchService: MatchService,
     private val matchDataFetcher: MatchDataFetcher,
-    private val lifetimeStatsUpdater: LifetimeStatsUpdater,
-    private val playerResolver: PlayerResolver
+    private val lifetimeStatsUpdater: LifetimeStatsUpdater
 ) {
     companion object {
         private val logger = LoggerFactory.getLogger(javaClass)
+        private val jobType: JobType = JobType.SINGLE_MATCH
     }
     // todo what to do about jobs that hangs while running
 
     @Scheduled(fixedDelay = 5000)
     fun processNextJob() {
-        if (jobRepository.existsByStatus(JobStatus.RUNNING)) {
-            logger.debug("A job is already running, skipping")
+        logger.info("Checking for next $jobType job...")
+        if (jobRepository.existsByJobTypeAndStatus(jobType, JobStatus.RUNNING)) {
+            logger.info("A job is already running, skipping")
             return
         }
-
-        val job = jobRepository.findFirstByStatusOrderByCreatedAtAsc(JobStatus.QUEUED) ?: return
+        // todo for future multi threading
+        //  ensure no job for the same match ID running, but might be queued
+        val job = jobRepository.findFirstByJobTypeAndStatusOrderByCreatedAtAsc(jobType, JobStatus.QUEUED) ?: return
         val jobId = job.id!!
         logger.info("Picked up job {} for player '{}' (matchCount={})", jobId, job.playerName, job.matchCount)
 
@@ -39,6 +43,8 @@ class JobExecutorService(
         try {
             executeJob(job)
             markJobCompleted(jobId)
+        } catch (_: JobCancelledException) {
+            logger.info("Job {} was cancelled during execution", jobId)
         } catch (e: Exception) {
             logger.error("Job {} failed for player '{}'", jobId, job.playerName, e)
             markJobFailed(jobId, job, e)
@@ -47,36 +53,34 @@ class JobExecutorService(
 
     private fun executeJob(job: UpdateJob) {
         val jobId = job.id!!
-        val resolvedPlayer = resolvePlayer(jobId, job)
-        val newMatches = collectNewMatchesMetadata(jobId, job.matchCount, resolvedPlayer.matchIds)
-        val participants = collectParticipants(jobId, newMatches)
+        ensureMatchNotExists(jobId, job.matchId!!)
+        val newMatch = collectNewMatchMetadata(jobId, job.matchId!!)
+        val participants = collectParticipants(jobId, newMatch)
         fetchLifetimeStats(jobId, participants)
-        saveMatchSnapshots(jobId, newMatches)
+        saveMatchSnapshot(jobId, newMatch)
     }
 
-    private fun collectNewMatchesMetadata(
-        jobId: ObjectId, matchCount: Int, matchIds: List<String>
-    ): List<FetchedMatch> {
+    private fun ensureMatchNotExists(jobId: ObjectId, matchId: String) {
+        updateProgress(jobId, "Ensuring match is not already in DB...")
+        if (matchService.existsByMatchId(matchId)) {
+            throw IllegalStateException("Match $matchId already exists in DB, cannot process job")
+        }
+    }
+
+    private fun collectNewMatchMetadata(jobId: ObjectId, matchId: String): FetchedMatch {
         updateProgress(jobId, "Calling match fetcher for new matches...")
-        val newMatches = matchDataFetcher.collectNewMatches(matchCount, matchIds)
-        updateProgress(jobId, "Match fetcher found ${newMatches.size} new matches, fetching details...")
-        return newMatches
+        val newMatch = matchDataFetcher.fetchSingleMatch(matchId)
+            ?: throw IllegalStateException("No match found for $matchId")
+        return newMatch
     }
 
-    private fun resolvePlayer(jobId: ObjectId, job: UpdateJob): ResolvedPlayer {
-        updateProgress(jobId, "Resolving player...")
-        val resolvedPlayer = playerResolver.resolve(job.accountId, job.playerName)
-        val currentJob = jobRepository.findById(jobId).get()
-        jobRepository.save(currentJob.copy(accountId = resolvedPlayer.accountId))
-        return resolvedPlayer
-    }
-
-    private fun collectParticipants(jobId: ObjectId, matches: List<FetchedMatch>): Set<SimpleParticipant> {
+    private fun collectParticipants(jobId: ObjectId, match: FetchedMatch): Set<SimpleParticipant> {
         updateProgress(jobId, "Collecting participants from matches responses...")
 
-        val participants =
-            matches.flatMap { it.realParticipants }.map { SimpleParticipant(it.accountId, it.playerName) }.toSet()
-        logger.info("Collected ${participants.size} unique real participants across ${matches.size} new matches")
+        val participants = match.realParticipants.map {
+            SimpleParticipant(it.accountId, it.playerName)
+        }.toSet()
+        logger.info("Collected ${participants.size} unique real participants from match ${match.matchId}")
         return participants
     }
 
@@ -103,14 +107,10 @@ class JobExecutorService(
         logger.info("Lifetime stats: {} total, {} fetched, {} cached", participants.size, fetched, skipped)
     }
 
-    private fun saveMatchSnapshots(jobId: ObjectId, matches: List<FetchedMatch>) {
-        updateProgress(jobId, "Saving match snapshots...")
-
-        matches.forEach { fetchedMatch ->
-            updateProgress(jobId, "Saving match snapshot ${fetchedMatch.matchId}")
-            saveMatchSnapshot(fetchedMatch)
-        }
-        logger.info("Saved {} new match snapshots", matches.size)
+    private fun saveMatchSnapshot(jobId: ObjectId, fetchedMatch: FetchedMatch) {
+        updateProgress(jobId, "Saving match snapshot ${fetchedMatch.matchId}")
+        saveMatchSnapshot(fetchedMatch)
+        logger.info("Saved new match snapshot ${fetchedMatch.matchId}")
     }
 
     private fun saveMatchSnapshot(fetchedMatch: FetchedMatch) {
