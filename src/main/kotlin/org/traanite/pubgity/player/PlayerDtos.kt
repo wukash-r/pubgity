@@ -1,5 +1,7 @@
 package org.traanite.pubgity.player
 
+import java.time.Instant
+
 data class PerMatchSkillData(
     val matchId: String,
     val label: String,
@@ -58,3 +60,13 @@ data class PlayerAggregatedView(
     val bestRankPoint: Double
 )
 
+data class PlayerMatchView(
+    val matchId: String,
+    val createdAt: Instant,
+    val gameMode: String,
+    val mapName: String,
+    val duration: Int,
+    val botCount: Int = 0,
+    val playerCount: Int,
+    val placeTaken: Int
+)

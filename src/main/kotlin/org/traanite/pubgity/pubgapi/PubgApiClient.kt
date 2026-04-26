@@ -95,9 +95,9 @@ class PubgApiClient(
     }
 
     fun getLifetimeStats(accountId: String): LifetimeStatsResponse {
-        logger.info("Fetching lifetime stats for: {}", accountId)
+        logger.info("Fetching lifetime stats for: $accountId")
         return rateLimitedCall {
-            restClient.get()
+            val response = restClient.get()
                 .uri(endpoints.lifetimeStats, accountId)
                 .retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError) { _, response ->
@@ -105,6 +105,8 @@ class PubgApiClient(
                     throw PubgApiException("Lifetime stats failed: ${response.statusCode}")
                 }
                 .body<LifetimeStatsResponse>()!!
+            logger.info("Lifetime stats fetched successfully for accountId: $accountId")
+            response
         }
     }
 

@@ -40,6 +40,7 @@ class MatchController(
                 ParticipantView(
                     accountId = p.accountId,
                     playerName = p.playerName,
+                    placeTaken = p.matchStats?.winPlace ?: 123,
                     kills = agg?.totalKills ?: 0,
                     damage = agg?.totalDamageDealt ?: 0.0,
                     wins = agg?.modeWins ?: 0,

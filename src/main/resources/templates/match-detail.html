@@ -25,6 +25,7 @@
             <tr>
                 <th>#</th>
                 <th>Player</th>
+                <th>Place Taken</th>
                 <th>Kills (all)</th>
                 <th>Damage (all)</th>
                 <th>K/D (mode)</th>
@@ -46,6 +47,7 @@
                        th:text="${p.playerName}"></a>
                     <strong th:if="${p.accountId == player.accountId}" th:text="${p.playerName}"></strong>
                 </td>
+                <td th:text="${p.placeTaken}"></td>
                 <td th:text="${p.kills}"></td>
                 <td th:text="${#numbers.formatDecimal(p.damage, 1, 0)}"></td>
                 <td th:text="${#numbers.formatDecimal(p.kd, 1, 2)}"></td>

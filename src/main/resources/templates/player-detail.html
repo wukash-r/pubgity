@@ -145,6 +145,7 @@
             <thead>
             <tr>
                 <th>Date</th>
+                <th>Place taken</th>
                 <th>Mode</th>
                 <th>Map</th>
                 <th>Duration</th>
@@ -156,10 +157,11 @@
             <tbody>
             <tr th:each="match : ${matches}">
                 <td><small th:text="${match.createdAt}"></small></td>
+                <td th:text="${match.placeTaken}"></td>
                 <td th:text="${match.gameMode}"></td>
                 <td th:text="${match.mapName}"></td>
                 <td th:text="${match.duration + 's'}"></td>
-                <td th:text="${#lists.size(match.rosters)}"></td>
+                <td th:text="${match.playerCount}"></td>
                 <td th:text="${match.botCount}"></td>
                 <td>
                     <a th:href="@{/players/{aid}/matches/{mid}(aid=${player.accountId},mid=${match.matchId})}"
@@ -202,7 +204,7 @@
     const dashStyle = (color) => ({borderColor: color, fill: false, tension: 0.2, borderWidth: 2, borderDash: [5,5]});
     const playerStyle = {borderColor: 'rgba(230,85,13,1)', fill: false, tension: 0.2, borderWidth: 3, pointRadius: 4, pointBackgroundColor: 'rgba(230,85,13,1)'};
 
-    new Chart(document.getElementById('matchKillsChart'), {
+    const matchKillsChart = new Chart(document.getElementById('matchKillsChart'), {
         type: 'line',
         data: {
             labels: labels,
@@ -216,8 +218,11 @@
         },
         options: {responsive: true, plugins: {title: {display: true, text: 'Participant Lifetime Kills (all modes)'}}}
     });
+    matchKillsChart.getDatasetMeta(0).hidden=true;
+    matchKillsChart.getDatasetMeta(1).hidden=true;
+    matchKillsChart.update();
 
-    new Chart(document.getElementById('matchDamageChart'), {
+    const matchDamageChart = new Chart(document.getElementById('matchDamageChart'), {
         type: 'line',
         data: {
             labels: labels,
@@ -231,8 +236,11 @@
         },
         options: {responsive: true, plugins: {title: {display: true, text: 'Participant Lifetime Damage (all modes)'}}}
     });
+    matchDamageChart.getDatasetMeta(0).hidden=true;
+    matchDamageChart.getDatasetMeta(1).hidden=true;
+    matchDamageChart.update();
 
-    new Chart(document.getElementById('matchKDChart'), {
+    const matchKDChart = new Chart(document.getElementById('matchKDChart'), {
         type: 'line',
         data: {
             labels: labels,
@@ -246,8 +254,11 @@
         },
         options: {responsive: true, plugins: {title: {display: true, text: 'Participant K/D Ratio (match mode)'}}}
     });
+    matchKDChart.getDatasetMeta(0).hidden=true;
+    matchKDChart.getDatasetMeta(1).hidden=true;
+    matchKDChart.update();
 
-    new Chart(document.getElementById('matchTimeSurvivedChart'), {
+    const matchTimeSurvivedChart = new Chart(document.getElementById('matchTimeSurvivedChart'), {
         type: 'line',
         data: {
             labels: labels,
@@ -261,8 +272,11 @@
         },
         options: {responsive: true, plugins: {title: {display: true, text: 'Participant Time Survived (match mode)'}}}
     });
+    matchTimeSurvivedChart.getDatasetMeta(0).hidden=true;
+    matchTimeSurvivedChart.getDatasetMeta(1).hidden=true;
+    matchTimeSurvivedChart.update();
 
-    new Chart(document.getElementById('matchWinsChart'), {
+    const matchWinsChart = new Chart(document.getElementById('matchWinsChart'), {
         type: 'line',
         data: {
             labels: labels,
@@ -276,8 +290,11 @@
         },
         options: {responsive: true, plugins: {title: {display: true, text: 'Participant Wins (match mode)'}}}
     });
+    matchWinsChart.getDatasetMeta(0).hidden=true;
+    matchWinsChart.getDatasetMeta(1).hidden=true;
+    matchWinsChart.update();
 
-    new Chart(document.getElementById('matchRoundsChart'), {
+    const matchRoundsChart = new Chart(document.getElementById('matchRoundsChart'), {
         type: 'line',
         data: {
             labels: labels,
@@ -291,8 +308,11 @@
         },
         options: {responsive: true, plugins: {title: {display: true, text: 'Participant Rounds Played (match mode)'}}}
     });
+    matchRoundsChart.getDatasetMeta(0).hidden=true;
+    matchRoundsChart.getDatasetMeta(1).hidden=true;
+    matchRoundsChart.update();
 
-    new Chart(document.getElementById('matchHSKillsChart'), {
+    const matchHSKillsChart = new Chart(document.getElementById('matchHSKillsChart'), {
         type: 'line',
         data: {
             labels: labels,
@@ -306,8 +326,11 @@
         },
         options: {responsive: true, plugins: {title: {display: true, text: 'Participant Headshot Kills (match mode)'}}}
     });
+    matchHSKillsChart.getDatasetMeta(0).hidden=true;
+    matchHSKillsChart.getDatasetMeta(1).hidden=true;
+    matchHSKillsChart.update();
 
-    new Chart(document.getElementById('matchTop10sChart'), {
+    const matchTop10sChart = new Chart(document.getElementById('matchTop10sChart'), {
         type: 'line',
         data: {
             labels: labels,
@@ -321,8 +344,11 @@
         },
         options: {responsive: true, plugins: {title: {display: true, text: 'Participant Top 10s (match mode)'}}}
     });
+    matchTop10sChart.getDatasetMeta(0).hidden=true;
+    matchTop10sChart.getDatasetMeta(1).hidden=true;
+    matchTop10sChart.update();
 
-    new Chart(document.getElementById('matchBestRankChart'), {
+    const matchBestRankChart = new Chart(document.getElementById('matchBestRankChart'), {
         type: 'line',
         data: {
             labels: labels,
@@ -336,6 +362,9 @@
         },
         options: {responsive: true, plugins: {title: {display: true, text: 'Best Rank Point (non-zero only)'}}}
     });
+    matchBestRankChart.getDatasetMeta(0).hidden=true;
+    matchBestRankChart.getDatasetMeta(1).hidden=true;
+    matchBestRankChart.update();
 
     new Chart(document.getElementById('matchRankedCountChart'), {
         type: 'bar',

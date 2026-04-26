@@ -44,12 +44,25 @@ class PlayerController(
         logger.info("Player '{}': loaded {} matches from DB", player.playerName, matches.size)
 
         val perMatchStats = statsAggregationService.computePerMatchSkillData(matches, accountId)
+        val playerMatches = matches.map {
+            PlayerMatchView(
+                matchId = it.matchId,
+                createdAt = it.createdAt,
+                gameMode = it.gameMode,
+                mapName = it.mapName,
+                duration = it.duration,
+                botCount = it.botCount,
+                playerCount = it.rosters.flatMap { roster -> roster.participants }.size,
+                placeTaken = it.rosters.flatMap { roster -> roster.participants }
+                    .firstOrNull { player -> player.accountId == accountId }?.matchStats?.winPlace ?: 0
+            )
+        }
 
         val latestSnapshot = playerService.getLatestLifetimeStats(accountId)
         val playerAggregated = latestSnapshot?.stats?.let { statsAggregationService.computePlayerAggregatedView(it) }
 
         model.addAttribute("player", player)
-        model.addAttribute("matches", matches)
+        model.addAttribute("matches", playerMatches)
         model.addAttribute("perMatchStats", perMatchStats)
         model.addAttribute("playerAggregated", playerAggregated)
         model.addAttribute("latestStats", latestSnapshot)

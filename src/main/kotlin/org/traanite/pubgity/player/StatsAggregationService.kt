@@ -13,7 +13,9 @@ class StatsAggregationService {
         matches: List<Match>,
         accountId: String
     ): List<PerMatchSkillData> {
-        return matches.map { match ->
+        return matches
+            .sortedBy { it.createdAt }
+            .map { match ->
             val allParticipants = match.rosters.flatMap { it.participants }
             val realParticipants = allParticipants.filter { it.lifetimeStatsSnapshot != null }
             val modeExtractor = gameModeExtractor(match.gameMode)

@@ -4,6 +4,7 @@ data class ParticipantView(
     val accountId: String,
     val playerName: String,
     val kills: Int,
+    val placeTaken: Int,
     val damage: Double,
     val wins: Int,
     val roundsPlayed: Int,
