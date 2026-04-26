@@ -1,6 +1,5 @@
 package org.traanite.pubgity.job
 
-import jakarta.annotation.PostConstruct
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
@@ -24,13 +23,7 @@ class JobExecutorService(
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    @PostConstruct
-    fun resetStaleJobs() {
-        val stale = jobRepository.findAll().filter { it.status == JobStatus.RUNNING }
-        if (stale.isEmpty()) return
-        stale.forEach { jobRepository.save(it.copy(status = JobStatus.QUEUED)) }
-        logger.info("Reset {} stale RUNNING jobs to QUEUED", stale.size)
-    }
+    // todo what to do about jobs that hangs while running
 
     @Scheduled(fixedDelay = 5000)
     fun processNextJob() {
