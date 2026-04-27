@@ -19,7 +19,8 @@ data class UpdateJob(
     val startedAt: Instant? = null,
     val completedAt: Instant? = null,
     val errorMessage: String? = null,
-    val progress: String? = null
+    val progress: String? = null,
+    val retried: Boolean = false
 )
 
 enum class JobStatus {

@@ -27,7 +27,7 @@
 
     <!-- Job Queue -->
     <div class="card mb-4">
-        <div class="card-header">Match Download Job Queue</div>
+        <div class="card-header">Match Download Job Queue (Multiple jobs can exist for one match, if match exists in db, job will fail on startup)</div>
         <div class="card-body">
             <table class="table table-sm">
                 <thead>
@@ -67,6 +67,11 @@
                             <button type="submit" class="btn btn-sm btn-warning"
                                     onclick="return confirm('Cancel this job?')">Cancel</button>
                         </form>
+
+                        <form th:if="${(job.status.name() == 'CANCELLED' || job.status.name() == 'FAILED') && job.retried == false}"
+                              method="post" th:action="@{/jobs/{id}/retry(id=${job.id})}" style="display:inline">
+                            <button type="submit" class="btn btn-sm btn-secondary">Retry</button>
+                        </form>
                     </td>
                 </tr>
                 </tbody>
@@ -77,7 +82,7 @@
 
     <!-- Job Queue -->
     <div class="card mb-4">
-        <div class="card-header">Fork Job Queue</div>
+        <div class="card-header">Fork Job Queue (Takes N recent matches, then filters out existing ones)</div>
         <div class="card-body">
             <table class="table table-sm">
                 <thead>

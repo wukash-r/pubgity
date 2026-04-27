@@ -42,7 +42,7 @@ class StatsAggregationService {
 
                 PerMatchSkillData(
                     matchId = match.matchId,
-                    label = "${match.gameMode} - ${match.mapName}",
+                    label = "${match.createdAt} - ${match.gameMode} - ${match.mapName}",
                     participantCount = realParticipants.size,
                     botCount = match.botCount,
                     minKills = min(kills),

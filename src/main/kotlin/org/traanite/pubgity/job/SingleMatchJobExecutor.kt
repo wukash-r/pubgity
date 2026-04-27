@@ -43,6 +43,9 @@ class SingleMatchJobExecutor(
         try {
             executeJob(job)
             markJobCompleted(jobId)
+        } catch (e: MatchExistsException) {
+            logger.info("Job {} match {} already exists in DB, marking job as completed", jobId, job.matchId)
+            markJobCancelled(jobId, job, e)
         } catch (_: JobCancelledException) {
             logger.info("Job {} was cancelled during execution", jobId)
         } catch (e: Exception) {
@@ -63,7 +66,7 @@ class SingleMatchJobExecutor(
     private fun ensureMatchNotExists(jobId: ObjectId, matchId: String) {
         updateProgress(jobId, "Ensuring match is not already in DB...")
         if (matchService.existsByMatchId(matchId)) {
-            throw IllegalStateException("Match $matchId already exists in DB, cannot process job")
+            throw MatchExistsException("Match $matchId already exists in DB")
         }
     }
 
@@ -165,6 +168,15 @@ class SingleMatchJobExecutor(
         jobRepository.save(
             current.copy(
                 status = JobStatus.FAILED, completedAt = Instant.now(), errorMessage = error.message?.take(500)
+            )
+        )
+    }
+
+    private fun markJobCancelled(jobId: ObjectId, job: UpdateJob, error: Exception) {
+        val current = jobRepository.findById(jobId).orElse(job)!!
+        jobRepository.save(
+            current.copy(
+                status = JobStatus.CANCELLED, completedAt = Instant.now(), errorMessage = error.message?.take(500)
             )
         )
     }

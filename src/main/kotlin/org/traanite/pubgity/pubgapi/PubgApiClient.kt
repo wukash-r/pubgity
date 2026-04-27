@@ -9,6 +9,7 @@ import io.github.resilience4j.retry.RetryConfig
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatusCode
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.body
@@ -29,7 +30,11 @@ class PubgApiClient(
         return rateLimitedCall {
             restClient.get().uri { it.path(endpoints.players).queryParam("filter[playerNames]", name).build() }
                 .retrieve().onStatus(HttpStatusCode::is4xxClientError) { _, response ->
-                    if (response.statusCode.value() == 429) throw TooManyRequestsException()
+                    if (response.statusCode == HttpStatus.TOO_MANY_REQUESTS) {
+                        logger.warn("Rate limit exceeded when fetching player by player name: $name")
+                        throw TooManyRequestsException()
+                    }
+
                     throw PubgApiException("Player search failed: ${response.statusCode}")
                 }.body<PlayersResponse>()!!.data.first()
         }
@@ -40,7 +45,10 @@ class PubgApiClient(
         return rateLimitedCall {
             restClient.get().uri { it.path(endpoints.players).queryParam("filter[playerIds]", accountId).build() }
                 .retrieve().onStatus(HttpStatusCode::is4xxClientError) { _, response ->
-                    if (response.statusCode.value() == 429) throw TooManyRequestsException()
+                    if (response.statusCode == HttpStatus.TOO_MANY_REQUESTS) {
+                        logger.warn("Rate limit exceeded when fetching player by accountId: $accountId")
+                        throw TooManyRequestsException()
+                    }
                     throw PubgApiException("Player lookup failed: ${response.statusCode}")
                 }.body<PlayersResponse>()!!.data.first()
         }
@@ -63,7 +71,11 @@ class PubgApiClient(
         return rateLimitedCall {
             val response = restClient.get().uri(endpoints.lifetimeStats, accountId).retrieve()
                 .onStatus(HttpStatusCode::is4xxClientError) { _, response ->
-                    if (response.statusCode.value() == 429) throw TooManyRequestsException()
+                    if (response.statusCode == HttpStatus.TOO_MANY_REQUESTS) {
+                        logger.warn("Rate limit exceeded when fetching lifetime stats by accountId: $accountId")
+                        throw TooManyRequestsException()
+                    }
+
                     throw PubgApiException("Lifetime stats failed: ${response.statusCode}")
                 }.body<LifetimeStatsResponse>()!!
             logger.info("Lifetime stats fetched successfully for accountId: $accountId")
@@ -99,7 +111,8 @@ class PubgApiConfiguration {
         val retry = Retry.of(
             "pubg-api",
             RetryConfig.custom<Any>().maxAttempts(apiProperties.retry.maxAttempts)
-                .waitDuration(apiProperties.retry.backoff).retryOnException { it is TooManyRequestsException }.build())
+                .waitDuration(apiProperties.retry.backoff).retryOnException { it is TooManyRequestsException }.build()
+        )
 
         val matchCache = Caffeine.newBuilder().maximumSize(apiProperties.matchCache.maxSize)
             .expireAfterWrite(apiProperties.matchCache.ttl).build<String, MatchResponse>()

@@ -26,8 +26,34 @@ class JobService(
                 matchCount = clampedCount
             )
         )
-        logger.info("Queued update job {} for player '{}' (accountId={}, matchCount={})", job.id, playerName, accountId, clampedCount)
+        logger.info(
+            "Queued update job {} for player '{}' (accountId={}, matchCount={})",
+            job.id,
+            playerName,
+            accountId,
+            clampedCount
+        )
         return job
+    }
+
+    // todo should just create job with propert createdAt and push to the top prio, but after implementing priority list
+    fun retryJob(jobId: ObjectId) {
+        logger.info("Retrying job $jobId")
+        val job = jobRepository.findById(jobId).orElse(null) ?: return
+        if (job.status == JobStatus.FAILED || job.status == JobStatus.CANCELLED) {
+            val retryJob = UpdateJob(
+                accountId = job.accountId,
+                playerName = job.playerName,
+                jobType = job.jobType,
+                matchCount = job.matchCount,
+                matchId = job.matchId,
+                status = JobStatus.QUEUED,
+                createdAt = job.createdAt
+            )
+            jobRepository.save(retryJob)
+            jobRepository.save(job.copy(retried = true))
+            logger.info("Retried failed job {}", jobId)
+        }
     }
 
     fun cancelJob(jobId: ObjectId) {

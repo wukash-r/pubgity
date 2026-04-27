@@ -20,12 +20,19 @@ class JobController(
     @GetMapping
     fun jobs(model: Model): String {
         val players = jobService.getPlayers()
+        // todo jobDTO, sort jobs by createdAt desc but also group into queued and the rest
         val jobs = jobService.getJobs()
         logger.debug("Jobs page loaded: {} players, {} jobs", players.size, jobs.size)
         model.addAttribute("players", players)
         model.addAttribute("matchJobs", jobs.filter { it.jobType == JobType.SINGLE_MATCH })
         model.addAttribute("forkJobs", jobs.filter { it.jobType == JobType.FORK })
         return "jobs"
+    }
+
+    @PostMapping("/{jobId}/retry")
+    fun retryJob(@PathVariable jobId: ObjectId): String {
+        jobService.retryJob(jobId)
+        return "redirect:/jobs"
     }
 
     @PostMapping("/players/add")
@@ -42,6 +49,7 @@ class JobController(
 
     @PostMapping("/players/{id}/update")
     fun updatePlayer(@PathVariable id: String, @RequestParam(defaultValue = "5") matchCount: Int): String {
+        // todo this should be in jobService entirely
         val player = jobService.getPlayers().firstOrNull { it.id.toString() == id }
             ?: return "redirect:/jobs"
         jobService.queueJob(player.accountId, player.playerName, matchCount)

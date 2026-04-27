@@ -124,4 +124,6 @@ class ForkJobExecutor(
     }
 }
 
+// todo merge common parts of executors
 class JobCancelledException(message: String) : RuntimeException(message)
+class MatchExistsException(message: String) : RuntimeException(message)

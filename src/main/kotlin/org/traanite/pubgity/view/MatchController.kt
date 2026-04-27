@@ -23,6 +23,9 @@ class MatchController(
         private val logger = LoggerFactory.getLogger(MatchController::class.java)
     }
 
+    // todo dmg / round (mode)
+    //  dmg / round (overall)
+    //  player stats of the match
     @GetMapping("/{matchId}")
     fun matchDetail(
         @PathVariable accountId: String,

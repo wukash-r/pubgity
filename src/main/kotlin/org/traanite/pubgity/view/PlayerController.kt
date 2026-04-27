@@ -25,6 +25,9 @@ class PlayerController(
         private val logger = LoggerFactory.getLogger(PlayerController::class.java)
     }
 
+    // todo dmg / round (mode)
+    //  dmg / round (overall)
+    //  move kd by mode calculation to aggregator
     @GetMapping
     fun listPlayers(@RequestParam(required = false) filter: String?, model: Model): String {
         val players = if (filter.isNullOrBlank()) {
@@ -33,7 +36,7 @@ class PlayerController(
             playerService.searchByPlayerName(filter)
         }
         logger.debug("Player list: filter='{}', found {} players", filter ?: "", players.size)
-        model.addAttribute("players", players)
+        model.addAttribute("players", players.sortedByDescending { it.matches.size })
         model.addAttribute("filter", filter ?: "")
         return "players"
     }
