@@ -35,7 +35,8 @@
             <tr>
                 <th class="sortable" data-sort-type="number"># <span class="sort-indicator"></span></th>
                 <th class="sortable" data-sort-type="string">Player <span class="sort-indicator"></span></th>
-                <th class="sortable" data-sort-type="number">Place Taken <span class="sort-indicator"></span></th>
+                <th class="sortable" data-sort-type="number">Win place <span class="sort-indicator"></span></th>
+                <th class="sortable" data-sort-type="number">Roster win place <span class="sort-indicator"></span></th>
                 <th class="sortable" data-sort-type="number">Kills (match) <span class="sort-indicator"></span></th>
                 <th class="sortable" data-sort-type="number">Damage (match) <span class="sort-indicator"></span></th>
                 <th class="sortable" data-sort-type="number">Kills (all) <span class="sort-indicator"></span></th>
@@ -64,6 +65,7 @@
                     <strong th:if="${p.accountId == player.accountId}" th:text="${p.playerName}"></strong>
                 </td>
                 <td th:text="${p.winPlace}"></td>
+                <td th:text="${p.rosterWinPlace}"></td>
                 <td th:text="${p.killsMatch}"></td>
                 <td th:text="${p.dmgMatch}"></td>
                 <td th:text="${p.kills}"></td>

@@ -24,7 +24,7 @@ data class UpdateJob(
 )
 
 enum class JobStatus {
-    QUEUED, RUNNING, COMPLETED, FAILED, CANCELLED
+    QUEUED, RUNNING, COMPLETED, FAILED, CANCELLED, SKIPPED
 }
 
 enum class JobType {

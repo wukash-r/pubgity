@@ -100,16 +100,18 @@
                 </thead>
                 <tbody>
                 <tr th:each="job : ${forkJobs}" th:classappend="${job.status.name() == 'FAILED' ? 'table-danger' :
-                    (job.status.name() == 'RUNNING' ? 'table-info' :
-                    (job.status.name() == 'COMPLETED' ? 'table-success' :
-                    (job.status.name() == 'CANCELLED' ? 'table-warning' : '')))}">
+                (job.status.name() == 'RUNNING' ? 'table-info' :
+                (job.status.name() == 'COMPLETED' ? 'table-success' :
+                (job.status.name() == 'SKIPPED' ? 'table-secondary' :
+                (job.status.name() == 'CANCELLED' ? 'table-warning' : ''))))}">
                     <td th:text="${job.playerName}"></td>
                     <td th:text="${job.matchCount}"></td>
                     <td><span class="badge"
                               th:classappend="${job.status.name() == 'QUEUED' ? 'bg-secondary' :
                               (job.status.name() == 'RUNNING' ? 'bg-primary' :
                               (job.status.name() == 'COMPLETED' ? 'bg-success' :
-                              (job.status.name() == 'CANCELLED' ? 'bg-warning' : 'bg-danger')))}"
+                              (job.status.name() == 'SKIPPED' ? 'bg-secondary' :
+                              (job.status.name() == 'CANCELLED' ? 'bg-warning' : 'bg-danger'))))}"
                               th:text="${job.status}"></span></td>
                     <td><small th:text="${job.progress}"></small></td>
                     <td><small th:text="${job.createdAt}"></small></td>
@@ -154,7 +156,7 @@
                     <td>
                         <form method="post" th:action="@{/jobs/players/{id}/update(id=${player.id})}"
                               style="display:inline" class="d-flex align-items-center gap-1">
-                            <input type="number" name="matchCount" value="5" min="1" max="30"
+                            <input type="number" name="matchCount" value="5" min="1" max="50"
                                    class="form-control form-control-sm" style="width:60px" title="Last N matches">
                             <button type="submit" class="btn btn-sm btn-success">Update</button>
                         </form>

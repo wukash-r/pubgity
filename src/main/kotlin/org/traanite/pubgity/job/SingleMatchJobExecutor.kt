@@ -23,7 +23,13 @@ class SingleMatchJobExecutor(
         private val logger = LoggerFactory.getLogger(SingleMatchJobExecutor::class.java)
         private val jobType: JobType = JobType.SINGLE_MATCH
     }
-    // todo what to do about jobs that hangs while running
+
+    // todo for future multi threading
+    //  ensure no job for the same match ID running, but might be queued
+    //  distributed rate limiting (only one active job by type running)
+    //  jobs starting in a separate thread, heartbeat, kill hanging jobs
+
+    // todo auto retry for failed jobs, up to x retries (configurable)
 
     @Scheduled(fixedDelay = 5000)
     fun processNextJob() {
@@ -32,8 +38,6 @@ class SingleMatchJobExecutor(
             logger.info("A job is already running, skipping")
             return
         }
-        // todo for future multi threading
-        //  ensure no job for the same match ID running, but might be queued
         val job = jobRepository.findFirstByJobTypeAndStatusOrderByCreatedAtAsc(jobType, JobStatus.QUEUED) ?: return
         val jobId = job.id!!
         logger.info("Picked up job {} for player '{}' (matchCount={})", jobId, job.playerName, job.matchCount)
@@ -177,7 +181,7 @@ class SingleMatchJobExecutor(
         val current = jobRepository.findById(jobId).orElse(job)!!
         jobRepository.save(
             current.copy(
-                status = JobStatus.CANCELLED, completedAt = Instant.now(), errorMessage = error.message?.take(500)
+                status = JobStatus.SKIPPED, completedAt = Instant.now(), errorMessage = error.message?.take(500)
             )
         )
     }

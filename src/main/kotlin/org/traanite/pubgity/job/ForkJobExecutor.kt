@@ -64,7 +64,6 @@ class ForkJobExecutor(
             val created = jobRepository.save(singleMatchJob)
             logger.info("Created single match job {} for match {}", created.id, created.matchId)
         }
-
     }
 
     private fun resolvePlayer(jobId: ObjectId, job: UpdateJob): ResolvedPlayer {
@@ -83,7 +82,6 @@ class ForkJobExecutor(
         updateProgress(jobId, "Match fetcher found ${newMatches.size} new matches, fetching details...")
         return newMatches
     }
-
 
     private fun isCancelled(jobId: ObjectId): Boolean {
         val current = jobRepository.findById(jobId).orElse(null) ?: return true
