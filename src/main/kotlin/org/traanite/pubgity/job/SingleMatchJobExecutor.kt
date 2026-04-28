@@ -30,6 +30,8 @@ class SingleMatchJobExecutor(
     //  jobs starting in a separate thread, heartbeat, kill hanging jobs
 
     // todo auto retry for failed jobs, up to x retries (configurable)
+    //  creates a new job with retries ++ and sets old job as retired
+    //  when clicked on frontend check if job hasn't been retried yet, if so, just skip
 
     @Scheduled(fixedDelay = 5000)
     fun processNextJob() {
@@ -61,7 +63,7 @@ class SingleMatchJobExecutor(
     private fun executeJob(job: UpdateJob) {
         val jobId = job.id!!
         ensureMatchNotExists(jobId, job.matchId!!)
-        val newMatch = collectNewMatchMetadata(jobId, job.matchId!!)
+        val newMatch = collectNewMatchMetadata(jobId, job.matchId)
         val participants = collectParticipants(jobId, newMatch)
         fetchLifetimeStats(jobId, participants)
         saveMatchSnapshot(jobId, newMatch)
