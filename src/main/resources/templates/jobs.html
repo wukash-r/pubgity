@@ -154,7 +154,7 @@
                     <td>
                         <form method="post" th:action="@{/jobs/players/{id}/update(id=${player.id})}"
                               style="display:inline" class="d-flex align-items-center gap-1">
-                            <input type="number" name="matchCount" value="5" min="1" max="10"
+                            <input type="number" name="matchCount" value="5" min="1" max="30"
                                    class="form-control form-control-sm" style="width:60px" title="Last N matches">
                             <button type="submit" class="btn btn-sm btn-success">Update</button>
                         </form>
