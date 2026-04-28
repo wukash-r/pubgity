@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <title th:text="'Pubgity - Match ' + ${match.matchId}">Match Detail</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Simple styles for clickable headers and indicators */
+        th.sortable { cursor: pointer; user-select: none; }
+        th.sortable .sort-indicator { margin-left: 6px; font-size: 0.8em; opacity: 0.7 }
+        th.sortable.sorted-asc .sort-indicator::after { content: "▲"; }
+        th.sortable.sorted-desc .sort-indicator::after { content: "▼"; }
+        th.sortable.sorted { background: rgba(0,0,0,0.03); }
+    </style>
 </head>
 <body>
 <div class="container mt-4">
@@ -22,27 +30,27 @@
 <!--    todo sorting on each row -->
 <!--    todo team shortId, for sorting as well -->
     <div class="table-responsive">
-        <table class="table table-sm table-striped">
+        <table id="participants-table" class="table table-sm table-striped">
             <thead>
             <tr>
-                <th>#</th>
-                <th>Player</th>
-                <th>Place Taken</th>
-                <th>Kills (match)</th>
-                <th>Damage (match)</th>
-                <th>Kills (all)</th>
-                <th>Damage (all)</th>
-                <th>Damage/Round (all)</th>
-                <th>Damage/Round (mode)</th>
-                <th>Damage/Min (all)</th>
-                <th>Damage/Min (mode)</th>
-                <th>K/D (mode)</th>
-                <th>Wins (mode)</th>
-                <th>Rounds (mode)</th>
-                <th>HS Kills (mode)</th>
-                <th>Top 10s (all)</th>
-                <th>Time Survived (all)</th>
-                <th>Best Rank Point</th>
+                <th class="sortable" data-sort-type="number"># <span class="sort-indicator"></span></th>
+                <th class="sortable" data-sort-type="string">Player <span class="sort-indicator"></span></th>
+                <th class="sortable" data-sort-type="number">Place Taken <span class="sort-indicator"></span></th>
+                <th class="sortable" data-sort-type="number">Kills (match) <span class="sort-indicator"></span></th>
+                <th class="sortable" data-sort-type="number">Damage (match) <span class="sort-indicator"></span></th>
+                <th class="sortable" data-sort-type="number">Kills (all) <span class="sort-indicator"></span></th>
+                <th class="sortable" data-sort-type="number">Damage (all) <span class="sort-indicator"></span></th>
+                <th class="sortable" data-sort-type="number">Damage/Round (all) <span class="sort-indicator"></span></th>
+                <th class="sortable" data-sort-type="number">Damage/Round (mode) <span class="sort-indicator"></span></th>
+                <th class="sortable" data-sort-type="number">Damage/Min (all) <span class="sort-indicator"></span></th>
+                <th class="sortable" data-sort-type="number">Damage/Min (mode) <span class="sort-indicator"></span></th>
+                <th class="sortable" data-sort-type="number">K/D (mode) <span class="sort-indicator"></span></th>
+                <th class="sortable" data-sort-type="number">Wins (mode) <span class="sort-indicator"></span></th>
+                <th class="sortable" data-sort-type="number">Rounds (mode) <span class="sort-indicator"></span></th>
+                <th class="sortable" data-sort-type="number">HS Kills (mode) <span class="sort-indicator"></span></th>
+                <th class="sortable" data-sort-type="number">Top 10s (all) <span class="sort-indicator"></span></th>
+                <th class="sortable" data-sort-type="number">Time Survived (all) <span class="sort-indicator"></span></th>
+                <th class="sortable" data-sort-type="number">Best Rank Point <span class="sort-indicator"></span></th>
             </tr>
             </thead>
             <tbody>
@@ -55,7 +63,7 @@
                        th:text="${p.playerName}"></a>
                     <strong th:if="${p.accountId == player.accountId}" th:text="${p.playerName}"></strong>
                 </td>
-                <td th:text="${p.placeTaken}"></td>
+                <td th:text="${p.winPlace}"></td>
                 <td th:text="${p.killsMatch}"></td>
                 <td th:text="${p.dmgMatch}"></td>
                 <td th:text="${p.kills}"></td>
@@ -75,6 +83,93 @@
             </tbody>
         </table>
     </div>
+
+    <script>
+        (function () {
+            // Helpers
+            function parseNumber(text) {
+                if (text == null) return NaN;
+                text = text.toString().trim();
+                if (text === '') return NaN;
+                // If it's like "1.2h" or "1h", strip trailing letters but keep decimal and minus
+                // Remove commas and non-numeric except dot and minus
+                var cleaned = text.replace(/,/g, '').replace(/[^(0-9).\-]/g, '');
+                // If cleaned is empty, return NaN
+                if (cleaned === '' || cleaned === '.' || cleaned === '-' || cleaned === '-.' ) return NaN;
+                return parseFloat(cleaned);
+            }
+
+            function getCellValue(row, idx) {
+                var cell = row.children[idx];
+                if (!cell) return '';
+                return cell.textContent || cell.innerText || '';
+            }
+
+            function updateIndexColumn(tbody) {
+                // Update the first column numbers (index)
+                var rows = Array.from(tbody.querySelectorAll('tr'));
+                rows.forEach(function (r, i) {
+                    var first = r.children[0];
+                    if (first) first.textContent = (i + 1);
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', function () {
+                var table = document.getElementById('participants-table');
+                if (!table) return;
+                var thead = table.tHead;
+                var tbody = table.tBodies[0];
+                if (!thead || !tbody) return;
+
+                var headers = Array.from(thead.querySelectorAll('th'));
+
+                headers.forEach(function (th, idx) {
+                    if (!th.classList.contains('sortable')) return;
+                    th.addEventListener('click', function () {
+                        var type = th.getAttribute('data-sort-type') || 'string';
+                        var currentlyAsc = th.classList.contains('sorted-asc');
+                        // Clear other headers
+                        headers.forEach(function (h) { h.classList.remove('sorted-asc', 'sorted-desc', 'sorted'); });
+                        // Set this header class
+                        th.classList.add('sorted');
+                        var newAsc = !currentlyAsc;
+                        th.classList.add(newAsc ? 'sorted-asc' : 'sorted-desc');
+
+                        var rows = Array.from(tbody.querySelectorAll('tr'));
+                        var mapped = rows.map(function (row, i) {
+                            var raw = getCellValue(row, idx);
+                            var val;
+                            if (type === 'number') {
+                                val = parseNumber(raw);
+                                // Use NaN -> -Infinity for consistent ordering (treat empty as very small)
+                                if (isNaN(val)) val = -Infinity;
+                            } else {
+                                val = (raw || '').trim().toLowerCase();
+                            }
+                            return { row: row, val: val, idx: i };
+                        });
+
+                        mapped.sort(function (a, b) {
+                            if (a.val === b.val) return a.idx - b.idx; // stable
+                            if (type === 'number') {
+                                return newAsc ? (a.val - b.val) : (b.val - a.val);
+                            } else {
+                                return newAsc ? (a.val > b.val ? 1 : -1) : (a.val > b.val ? -1 : 1);
+                            }
+                        });
+
+                        // Re-append rows in new order
+                        var frag = document.createDocumentFragment();
+                        mapped.forEach(function (m) { frag.appendChild(m.row); });
+                        tbody.appendChild(frag);
+
+                        // Update index column
+                        updateIndexColumn(tbody);
+                    });
+                });
+            });
+        })();
+    </script>
 
     <p th:if="${#lists.isEmpty(participants)}" class="text-muted">No participant stats available for this match.</p>
 </div>
