@@ -176,50 +176,82 @@
         <p class="text-muted"><small>Each point is one match. Range = all participants. <strong style="color: #e6550d;">Orange
             line = player's snapshot at time of match was downloaded.</strong></small></p>
         <div class="row mb-4">
-            <div class="col-md-6">
+            <div class="col-md-10">
                 <canvas id="matchKillsChart"></canvas>
             </div>
-            <div class="col-md-6">
+        </div>
+        <div class="row mb-4">
+            <div class="col-md-10">
                 <canvas id="matchDamageChart"></canvas>
             </div>
         </div>
         <div class="row mb-4">
-            <div class="col-md-6">
+            <div class="col-md-10">
+                <canvas id="matchDmgPerRoundLifetimeChart"></canvas>
+            </div>
+        </div>
+        <div class="row mb-4">
+            <div class="col-md-10">
+                <canvas id="matchDmgPerRoundModeChart"></canvas>
+            </div>
+        </div>
+        <div class="row mb-4">
+            <div class="col-md-10">
+                <canvas id="matchDmgPerMinuteLifetimeChart"></canvas>
+            </div>
+        </div>
+        <div class="row mb-4">
+            <div class="col-md-10">
+                <canvas id="matchDmgPerMinuteModeChart"></canvas>
+            </div>
+        </div>
+        <div class="row mb-4">
+            <div class="col-md-10">
                 <canvas id="matchKDChart"></canvas>
             </div>
-            <div class="col-md-6">
+        </div>
+        <div class="row mb-4">
+            <div class="col-md-10">
                 <canvas id="matchTimeSurvivedChart"></canvas>
             </div>
         </div>
         <div class="row mb-4">
-            <div class="col-md-6">
+            <div class="col-md-10">
                 <canvas id="matchWinsChart"></canvas>
             </div>
-            <div class="col-md-6">
+        </div>
+        <div class="row mb-4">
+            <div class="col-md-10">
                 <canvas id="matchRoundsChart"></canvas>
             </div>
         </div>
         <div class="row mb-4">
-            <div class="col-md-6">
+            <div class="col-md-10">
                 <canvas id="matchHSKillsChart"></canvas>
             </div>
-            <div class="col-md-6">
+        </div>
+        <div class="row mb-4">
+            <div class="col-md-10">
                 <canvas id="matchTop10sChart"></canvas>
             </div>
         </div>
         <div class="row mb-4">
-            <div class="col-md-6">
+            <div class="col-md-10">
                 <canvas id="matchBestRankChart"></canvas>
             </div>
-            <div class="col-md-6">
+        </div>
+        <div class="row mb-4">
+            <div class="col-md-10">
                 <canvas id="matchRankedCountChart"></canvas>
             </div>
         </div>
         <div class="row mb-4">
-            <div class="col-md-6">
+            <div class="col-md-10">
                 <canvas id="matchParticipantsChart"></canvas>
             </div>
-            <div class="col-md-6">
+        </div>
+        <div class="row mb-4">
+            <div class="col-md-10">
                 <canvas id="matchBotsChart"></canvas>
             </div>
         </div>
@@ -263,29 +295,61 @@
 
 <script th:if="${!#lists.isEmpty(perMatchStats)}" th:inline="javascript">
     const labels = /*[[${perMatchStats.![label]}]]*/ [];
+
     const minKills = /*[[${perMatchStats.![minKills]}]]*/ [];
     const maxKills = /*[[${perMatchStats.![maxKills]}]]*/ [];
     const medianKills = /*[[${perMatchStats.![medianKills]}]]*/ [];
     const avgKills = /*[[${perMatchStats.![avgKills]}]]*/ [];
+
     const minDamage = /*[[${perMatchStats.![minDamage]}]]*/ [];
     const maxDamage = /*[[${perMatchStats.![maxDamage]}]]*/ [];
     const medianDamage = /*[[${perMatchStats.![medianDamage]}]]*/ [];
     const avgDamage = /*[[${perMatchStats.![avgDamage]}]]*/ [];
+
+    const minDmgPerRoundLifetime = /*[[${perMatchStats.![minDmgPerRoundLifetime]}]]*/ [];
+    const maxDmgPerRoundLifetime = /*[[${perMatchStats.![maxDmgPerRoundLifetime]}]]*/ [];
+    const medianDmgPerRoundLifetime = /*[[${perMatchStats.![medianDmgPerRoundLifetime]}]]*/ [];
+    const avgDmgPerRoundLifetime = /*[[${perMatchStats.![avgDmgPerRoundLifetime]}]]*/ [];
+
+    const minDmgPerRoundMode = /*[[${perMatchStats.![minDmgPerRoundMode]}]]*/ [];
+    const maxDmgPerRoundMode = /*[[${perMatchStats.![maxDmgPerRoundMode]}]]*/ [];
+    const medianDmgPerRoundMode = /*[[${perMatchStats.![medianDmgPerRoundMode]}]]*/ [];
+    const avgDmgPerRoundMode = /*[[${perMatchStats.![avgDmgPerRoundMode]}]]*/ [];
+
+    const minDmgPerMinuteLifetime = /*[[${perMatchStats.![minDmgPerMinuteLifetime]}]]*/ [];
+    const maxDmgPerMinuteLifetime = /*[[${perMatchStats.![maxDmgPerMinuteLifetime]}]]*/ [];
+    const medianDmgPerMinuteLifetime = /*[[${perMatchStats.![medianDmgPerMinuteLifetime]}]]*/ [];
+    const avgDmgPerMinuteLifetime = /*[[${perMatchStats.![avgDmgPerMinuteLifetime]}]]*/ [];
+
+    const minDmgPerMinuteMode = /*[[${perMatchStats.![minDmgPerMinuteMode]}]]*/ [];
+    const maxDmgPerMinuteMode = /*[[${perMatchStats.![maxDmgPerMinuteMode]}]]*/ [];
+    const medianDmgPerMinuteMode = /*[[${perMatchStats.![medianDmgPerMinuteMode]}]]*/ [];
+    const avgDmgPerMinuteMode = /*[[${perMatchStats.![avgDmgPerMinuteMode]}]]*/ [];
+
     const minKD = /*[[${perMatchStats.![minKD]}]]*/ [];
     const maxKD = /*[[${perMatchStats.![maxKD]}]]*/ [];
     const medianKD = /*[[${perMatchStats.![medianKD]}]]*/ [];
     const avgKD = /*[[${perMatchStats.![avgKD]}]]*/ [];
+
     const participantCounts = /*[[${perMatchStats.![participantCount]}]]*/ [];
     const botCounts = /*[[${perMatchStats.![botCount]}]]*/ [];
+
     const minBRP = /*[[${perMatchStats.![minBestRankPoint]}]]*/ [];
     const maxBRP = /*[[${perMatchStats.![maxBestRankPoint]}]]*/ [];
     const medianBRP = /*[[${perMatchStats.![medianBestRankPoint]}]]*/ [];
     const avgBRP = /*[[${perMatchStats.![avgBestRankPoint]}]]*/ [];
+
     const rankedCounts = /*[[${perMatchStats.![rankedPlayerCount]}]]*/ [];
+
+    // todo instead of using snapshot
     const playerKills = /*[[${perMatchStats.![playerSnapshotKills]}]]*/ [];
     const playerDamage = /*[[${perMatchStats.![playerSnapshotDamage]}]]*/ [];
     const playerKD = /*[[${perMatchStats.![playerSnapshotKD]}]]*/ [];
     const playerBRP = /*[[${perMatchStats.![playerSnapshotBestRankPoint]}]]*/ [];
+    const playerDmgPerRoundLifetime = /*[[${perMatchStats.![playerSnapshotDmgPerRoundLifetime]}]]*/ [];
+    const playerDmgPerRoundMode = /*[[${perMatchStats.![playerSnapshotDmgPerRoundMode]}]]*/ [];
+    const playerDmgPerMinuteLifetime = /*[[${perMatchStats.![playerSnapshotDmgPerMinuteLifetime]}]]*/ [];
+    const playerDmgPerMinuteMode = /*[[${perMatchStats.![playerSnapshotDmgPerMinuteMode]}]]*/ [];
 
     const rangeStyle = (color) => ({
         borderColor: color,
@@ -341,6 +405,78 @@
     matchDamageChart.getDatasetMeta(0).hidden = true;
     matchDamageChart.getDatasetMeta(1).hidden = true;
     matchDamageChart.update();
+
+    const matchDmgPerRoundLifetimeChart = new Chart(document.getElementById('matchDmgPerRoundLifetimeChart'), {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {label: 'Min', data: minDmgPerRoundLifetime, ...rangeStyle('rgba(54,162,235,1)')},
+                {label: 'Max', data: maxDmgPerRoundLifetime, ...rangeStyle('rgba(54,162,235,1)'), fill: false},
+                {label: 'Median', data: medianDmgPerRoundLifetime, ...solidStyle('rgba(54,162,235,1)')},
+                {label: 'Avg', data: avgDmgPerRoundLifetime, ...dashStyle('rgba(255,159,64,1)')},
+                {label: 'Player (snapshot)', data: playerDmgPerRoundLifetime, ...playerStyle}
+            ]
+        },
+        options: {responsive: true, plugins: {title: {display: true, text: 'Damage per Round (lifetime)'}}}
+    });
+    matchDmgPerRoundLifetimeChart.getDatasetMeta(0).hidden = true;
+    matchDmgPerRoundLifetimeChart.getDatasetMeta(1).hidden = true;
+    matchDmgPerRoundLifetimeChart.update();
+
+    const matchDmgPerRoundModeChart = new Chart(document.getElementById('matchDmgPerRoundModeChart'), {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {label: 'Min', data: minDmgPerRoundMode, ...rangeStyle('rgba(153,102,255,1)')},
+                {label: 'Max', data: maxDmgPerRoundMode, ...rangeStyle('rgba(153,102,255,1)'), fill: false},
+                {label: 'Median', data: medianDmgPerRoundMode, ...solidStyle('rgba(153,102,255,1)')},
+                {label: 'Avg', data: avgDmgPerRoundMode, ...dashStyle('rgba(255,205,86,1)')},
+                {label: 'Player (snapshot)', data: playerDmgPerRoundMode, ...playerStyle}
+            ]
+        },
+        options: {responsive: true, plugins: {title: {display: true, text: 'Damage per Round (match mode)'}}}
+    });
+    matchDmgPerRoundModeChart.getDatasetMeta(0).hidden = true;
+    matchDmgPerRoundModeChart.getDatasetMeta(1).hidden = true;
+    matchDmgPerRoundModeChart.update();
+
+    const matchDmgPerMinuteLifetimeChart = new Chart(document.getElementById('matchDmgPerMinuteLifetimeChart'), {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {label: 'Min', data: minDmgPerMinuteLifetime, ...rangeStyle('rgba(75,192,192,1)')},
+                {label: 'Max', data: maxDmgPerMinuteLifetime, ...rangeStyle('rgba(75,192,192,1)'), fill: false},
+                {label: 'Median', data: medianDmgPerMinuteLifetime, ...solidStyle('rgba(75,192,192,1)')},
+                {label: 'Avg', data: avgDmgPerMinuteLifetime, ...dashStyle('rgba(255,99,132,1)')},
+                {label: 'Player (snapshot)', data: playerDmgPerMinuteLifetime, ...playerStyle}
+            ]
+        },
+        options: {responsive: true, plugins: {title: {display: true, text: 'Damage per Minute (lifetime)'}}}
+    });
+    matchDmgPerMinuteLifetimeChart.getDatasetMeta(0).hidden = true;
+    matchDmgPerMinuteLifetimeChart.getDatasetMeta(1).hidden = true;
+    matchDmgPerMinuteLifetimeChart.update();
+
+    const matchDmgPerMinuteModeChart = new Chart(document.getElementById('matchDmgPerMinuteModeChart'), {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {label: 'Min', data: minDmgPerMinuteMode, ...rangeStyle('rgba(255,99,132,1)')},
+                {label: 'Max', data: maxDmgPerMinuteMode, ...rangeStyle('rgba(255,99,132,1)'), fill: false},
+                {label: 'Median', data: medianDmgPerMinuteMode, ...solidStyle('rgba(255,99,132,1)')},
+                {label: 'Avg', data: avgDmgPerMinuteMode, ...dashStyle('rgba(54,162,235,1)')},
+                {label: 'Player (snapshot)', data: playerDmgPerMinuteMode, ...playerStyle}
+            ]
+        },
+        options: {responsive: true, plugins: {title: {display: true, text: 'Damage per Minute (match mode)'}}}
+    });
+    matchDmgPerMinuteModeChart.getDatasetMeta(0).hidden = true;
+    matchDmgPerMinuteModeChart.getDatasetMeta(1).hidden = true;
+    matchDmgPerMinuteModeChart.update();
 
     const matchKDChart = new Chart(document.getElementById('matchKDChart'), {
         type: 'line',

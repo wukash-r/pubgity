@@ -41,6 +41,9 @@ class PlayerController(
         return "players"
     }
 
+    // todo performance of this call with 30 matches takes around a second
+    //  could lead to performance issues with more users
+    //  caching on aggregation service desirable
     @GetMapping("/{accountId}")
     fun playerDetail(@PathVariable accountId: String, model: Model): String {
         logger.info("Loading detail page for accountId: {}", accountId)
@@ -52,6 +55,8 @@ class PlayerController(
         logger.info("Player '{}': loaded {} matches from DB", player.playerName, matches.size)
 
         val perMatchStats = statsAggregationService.computePerMatchSkillData(matches, accountId)
+
+        logger.debug("Computed per-match stats for player '{}', matches: {}", player.playerName, perMatchStats.size)
         val playerMatches = matches.map {
             PlayerMatchView(
                 matchId = it.matchId,
@@ -68,6 +73,8 @@ class PlayerController(
 
         val latestSnapshot = playerService.getLatestLifetimeStats(accountId)
         val playerAggregated = latestSnapshot?.stats?.let { statsAggregationService.computePlayerAggregatedView(it) }
+
+        logger.debug("Prepared aggregated stats for player '{}'", player.playerName)
 
         model.addAttribute("player", player)
         model.addAttribute("matches", playerMatches)

@@ -96,6 +96,7 @@ class SingleMatchJobExecutor(
                 "Fetching lifetime stats (${index + 1}/${participants.size}, $fetched fetched, $skipped cached)"
             updateProgress(jobId, progress)
 
+            // todo pull stats per season
             val updateLifetimeStats =
                 lifetimeStatsUpdater.updateLifetimeStats(participant.accountId, participant.playerName)
             when (updateLifetimeStats) {

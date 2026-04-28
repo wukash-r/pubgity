@@ -38,17 +38,22 @@ class MatchController(
         val match = matchService.findByMatchId(matchId)
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Match not found")
 
-        val modeExtractor = statsAggregationService.gameModeExtractor(match.gameMode)
         val participantsWithMode = match.rosters.flatMap { it.participants }
             .filter { it.lifetimeStatsSnapshot != null }
             .map { p ->
-                val agg = statsAggregationService.aggregateParticipantStats(p.lifetimeStatsSnapshot!!, modeExtractor)
+                val agg = statsAggregationService.aggregateParticipantStats(p.lifetimeStatsSnapshot!!, match.gameMode)
                 ParticipantView(
                     accountId = p.accountId,
                     playerName = p.playerName,
                     placeTaken = p.matchStats?.winPlace ?: 123,
+                    killsMatch = p.matchStats?.kills ?: 0,
+                    dmgMatch = p.matchStats?.damageDealt?.toInt() ?: 0,
                     kills = agg?.totalKills ?: 0,
                     damage = agg?.totalDamageDealt ?: 0.0,
+                    dmgPerRoundLifetime = agg?.dmgPerRoundLifetime ?: 0.0,
+                    dmgPerRoundMode = agg?.dmgPerRoundMode ?: 0.0,
+                    dmgPerMinuteLifetime = agg?.dmgPerMinuteLifetime ?: 0.0,
+                    dmgPerMinuteMode = agg?.dmgPerMinuteMode ?: 0.0,
                     wins = agg?.modeWins ?: 0,
                     roundsPlayed = agg?.modeRoundsPlayed ?: 0,
                     headshotKills = agg?.modeHeadshotKills ?: 0,
@@ -72,7 +77,13 @@ data class ParticipantView(
     val playerName: String,
     val kills: Int,
     val placeTaken: Int,
+    val killsMatch: Int,
+    val dmgMatch: Int,
     val damage: Double,
+    val dmgPerRoundLifetime: Double,
+    val dmgPerRoundMode: Double,
+    val dmgPerMinuteLifetime: Double,
+    val dmgPerMinuteMode: Double,
     val wins: Int,
     val roundsPlayed: Int,
     val headshotKills: Int,

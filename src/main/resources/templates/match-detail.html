@@ -19,6 +19,8 @@
         <small th:text="${#lists.size(participants)} + ' participants with lifetime stats | ' + ${match.botCount} + ' bots'"></small>
     </p>
 
+<!--    todo sorting on each row -->
+<!--    todo team shortId, for sorting as well -->
     <div class="table-responsive">
         <table class="table table-sm table-striped">
             <thead>
@@ -26,8 +28,14 @@
                 <th>#</th>
                 <th>Player</th>
                 <th>Place Taken</th>
+                <th>Kills (match)</th>
+                <th>Damage (match)</th>
                 <th>Kills (all)</th>
                 <th>Damage (all)</th>
+                <th>Damage/Round (all)</th>
+                <th>Damage/Round (mode)</th>
+                <th>Damage/Min (all)</th>
+                <th>Damage/Min (mode)</th>
                 <th>K/D (mode)</th>
                 <th>Wins (mode)</th>
                 <th>Rounds (mode)</th>
@@ -48,8 +56,14 @@
                     <strong th:if="${p.accountId == player.accountId}" th:text="${p.playerName}"></strong>
                 </td>
                 <td th:text="${p.placeTaken}"></td>
+                <td th:text="${p.killsMatch}"></td>
+                <td th:text="${p.dmgMatch}"></td>
                 <td th:text="${p.kills}"></td>
                 <td th:text="${#numbers.formatDecimal(p.damage, 1, 0)}"></td>
+                <td th:text="${#numbers.formatDecimal((p.dmgPerRoundLifetime ?: 0.0), 1, 2)}"></td>
+                <td th:text="${#numbers.formatDecimal((p.dmgPerRoundMode ?: 0.0), 1, 2)}"></td>
+                <td th:text="${#numbers.formatDecimal((p.dmgPerMinuteLifetime ?: 0.0), 1, 2)}"></td>
+                <td th:text="${#numbers.formatDecimal((p.dmgPerMinuteMode ?: 0.0), 1, 2)}"></td>
                 <td th:text="${#numbers.formatDecimal(p.kd, 1, 2)}"></td>
                 <td th:text="${p.wins}"></td>
                 <td th:text="${p.roundsPlayed}"></td>
