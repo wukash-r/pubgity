@@ -33,6 +33,7 @@ class SingleMatchJobExecutor(
     //  creates a new job with retries ++ and sets old job as retired
     //  when clicked on frontend check if job hasn't been retried yet, if so, just skip
 
+    // todo save ban type
     @Scheduled(fixedDelay = 5000)
     fun processNextJob() {
         logger.info("Checking for next $jobType job...")

@@ -7,9 +7,11 @@ import org.springframework.data.mongodb.core.mapping.Document
 
 @Document(collection = "players")
 data class Player(
-    @Id val id: ObjectId? = null,
+    @Id
+    val id: ObjectId? = null,
     val playerName: String,
-    @Indexed(unique = true, sparse = true) val accountId: String? = null,
+    @Indexed(unique = true, sparse = true)
+    val accountId: String? = null,
     val matches: Set<PlayerMatchRef> = emptySet()
 )
 

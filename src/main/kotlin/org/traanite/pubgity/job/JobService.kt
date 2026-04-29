@@ -17,7 +17,7 @@ class JobService(
     fun getJobs(): List<UpdateJob> = jobRepository.findAllByOrderByCreatedAtDesc()
 
     fun queueJob(accountId: String?, playerName: String, matchCount: Int): UpdateJob {
-        val clampedCount = matchCount.coerceIn(1, 50)
+        val clampedCount = matchCount.coerceIn(1, 100)
         val job = jobRepository.save(
             UpdateJob(
                 accountId = accountId,
