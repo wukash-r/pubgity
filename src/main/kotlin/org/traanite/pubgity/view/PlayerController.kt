@@ -12,6 +12,7 @@ import org.springframework.web.server.ResponseStatusException
 import org.traanite.pubgity.match.MatchService
 import org.traanite.pubgity.player.PlayerService
 import org.traanite.pubgity.stats.StatsAggregationService
+import org.traanite.pubgity.stats.StatsService
 import java.time.Instant
 
 @Controller
@@ -19,7 +20,8 @@ import java.time.Instant
 class PlayerController(
     private val playerService: PlayerService,
     private val matchService: MatchService,
-    private val statsAggregationService: StatsAggregationService
+    private val statsAggregationService: StatsAggregationService,
+    private val statsService: StatsService
 ) {
     companion object {
         private val logger = LoggerFactory.getLogger(PlayerController::class.java)
@@ -71,7 +73,7 @@ class PlayerController(
             )
         }
 
-        val latestSnapshot = playerService.getLatestLifetimeStats(accountId)
+        val latestSnapshot = statsService.getLatestLifetimeStats(accountId)
         val playerAggregated = latestSnapshot?.stats?.let { statsAggregationService.computePlayerAggregatedView(it) }
 
         logger.debug("Prepared aggregated stats for player '{}'", player.playerName)

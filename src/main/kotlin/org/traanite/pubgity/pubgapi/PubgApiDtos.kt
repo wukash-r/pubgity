@@ -167,3 +167,20 @@ data class ApiModeStats(
     val wins: Int = 0
 )
 
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class SeasonsResponse(
+    val data: List<SeasonData> = emptyList()
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class SeasonData(
+    val type: String,
+    val id: String,
+    val attributes: SeasonAttributes? = null
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class SeasonAttributes(
+    val isCurrentSeason: Boolean = false,
+    val isOffseason: Boolean = false
+)

@@ -83,6 +83,22 @@ class PubgApiClient(
         }
     }
 
+    fun getSeasons(): SeasonsResponse {
+        logger.info("Fetching seasons data")
+        return rateLimitedCall {
+            val response = restClient.get().uri(endpoints.seasons).retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError) { _, response ->
+                    if (response.statusCode == HttpStatus.TOO_MANY_REQUESTS) {
+                        logger.warn("Rate limit exceeded when fetching seasons data")
+                        throw TooManyRequestsException()
+                    }
+                    throw PubgApiException("Seasons data fetch failed: ${response.statusCode}")
+                }.body<SeasonsResponse>()!!
+            logger.info("Seasons data fetched successfully, total seasons: ${response.data.size}")
+            response
+        }
+    }
+
     private fun <T> rateLimitedCall(block: () -> T): T {
         logger.debug("Acquiring rate limiter permit (available: {})", rateLimiter.metrics.availablePermissions)
         val rateLimited = RateLimiter.decorateCallable(rateLimiter) { block() }

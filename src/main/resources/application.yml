@@ -19,6 +19,8 @@ pubg:
     endpoints:
       players: /players
       matches: /matches/{matchId}
+      seasons: /seasons
+      season-stats: /players/{accountId}/seasons/{seasonId}
       lifetime-stats: /players/{accountId}/seasons/lifetime
     rate-limit:
       limit-for-period: 10
@@ -32,3 +34,5 @@ pubg:
       ttl: 1h
   player:
     stats-ttl: 7d
+  season:
+    updateSeasonsCron: 0 0 0 * * ? # every day at midnight

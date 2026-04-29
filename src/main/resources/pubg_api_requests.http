@@ -25,3 +25,7 @@ GET https://api.pubg.com/shards/steam/players/account.51dad8a9c85644fa948870ee19
 Accept: application/json
 Authorization: Bearer {{api_key}}
 
+### Get the list of seasons
+GET https://api.pubg.com/shards/steam/seasons
+Accept: application/json
+Authorization: Bearer {{api_key}}

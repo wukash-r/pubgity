@@ -17,15 +17,20 @@ data class PubgApiProperties(
         val limitRefreshPeriod: Duration = Duration.ofSeconds(60),
         val timeoutDuration: Duration = Duration.ofMinutes(2)
     )
+
     data class EndpointProperties(
         val players: String = "/players",
         val matches: String = "/matches/{matchId}",
-        val lifetimeStats: String = "/players/{accountId}/seasons/lifetime"
+        val lifetimeStats: String = "/players/{accountId}/seasons/lifetime",
+        val seasons: String = "/seasons",
+        val seasonStats: String = "/players/{accountId}/seasons/{seasonId}"
     )
+
     data class RetryProperties(
         val maxAttempts: Int = 3,
         val backoff: Duration = Duration.ofSeconds(30)
     )
+
     data class MatchCacheProperties(
         val maxSize: Long = 500,
         val ttl: Duration = Duration.ofHours(1)
