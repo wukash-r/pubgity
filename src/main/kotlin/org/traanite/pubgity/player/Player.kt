@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.mapping.Document
 data class Player(
     @Id
     val id: ObjectId? = null,
+    @Indexed(unique = true)
     val playerName: String,
     @Indexed(unique = true, sparse = true)
     val accountId: String? = null,

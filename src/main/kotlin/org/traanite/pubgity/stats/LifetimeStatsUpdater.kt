@@ -21,6 +21,7 @@ class LifetimeStatsUpdater(
         private val logger = LoggerFactory.getLogger(LifetimeStatsUpdater::class.java)
     }
 
+    // todo more logging here and throughout
     fun updateLifetimeStats(accountId: String, playerName: String): LifetimeStatsUpdateResult {
         val latestSnapshot = statsService.getLatestLifetimeStats(accountId)
 
