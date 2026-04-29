@@ -1,4 +1,4 @@
-package org.traanite.pubgity.player
+package org.traanite.pubgity.stats
 
 import org.springframework.stereotype.Service
 import org.traanite.pubgity.match.Match

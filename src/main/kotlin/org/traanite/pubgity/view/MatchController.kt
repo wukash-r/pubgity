@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.server.ResponseStatusException
 import org.traanite.pubgity.match.MatchService
 import org.traanite.pubgity.player.PlayerService
-import org.traanite.pubgity.player.StatsAggregationService
+import org.traanite.pubgity.stats.StatsAggregationService
 
 @Controller
 @RequestMapping("/players/{accountId}/matches")

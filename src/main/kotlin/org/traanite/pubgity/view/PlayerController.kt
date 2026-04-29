@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.server.ResponseStatusException
 import org.traanite.pubgity.match.MatchService
 import org.traanite.pubgity.player.PlayerService
-import org.traanite.pubgity.player.StatsAggregationService
+import org.traanite.pubgity.stats.StatsAggregationService
 import java.time.Instant
 
 @Controller

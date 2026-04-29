@@ -1,4 +1,4 @@
-package org.traanite.pubgity.player
+package org.traanite.pubgity.stats
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import org.bson.types.ObjectId

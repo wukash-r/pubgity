@@ -5,10 +5,11 @@ import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.traanite.pubgity.match.*
-import org.traanite.pubgity.player.LifetimeStatsUpdateResult
-import org.traanite.pubgity.player.LifetimeStatsUpdater
 import org.traanite.pubgity.player.PlayerService
 import org.traanite.pubgity.pubgapi.toParticipantLifetimeStats
+import org.traanite.pubgity.stats.LifetimeStatsUpdateResult
+import org.traanite.pubgity.stats.LifetimeStatsUpdater
+import org.traanite.pubgity.stats.StatsService
 import java.time.Instant
 
 @Service
@@ -17,7 +18,8 @@ class SingleMatchJobExecutor(
     private val playerService: PlayerService,
     private val matchService: MatchService,
     private val matchDataFetcher: MatchDataFetcher,
-    private val lifetimeStatsUpdater: LifetimeStatsUpdater
+    private val lifetimeStatsUpdater: LifetimeStatsUpdater,
+    private val statsService: StatsService
 ) {
     companion object {
         private val logger = LoggerFactory.getLogger(SingleMatchJobExecutor::class.java)
@@ -127,7 +129,7 @@ class SingleMatchJobExecutor(
     private fun saveMatchSnapshot(fetchedMatch: FetchedMatch) {
         val rosterSnapshots = fetchedMatch.rosters.map { roster ->
             val participantSnapshots = roster.participants.map { participant ->
-                val latestSnapshot = playerService.getLatestLifetimeStats(participant.accountId)
+                val latestSnapshot = statsService.getLatestLifetimeStats(participant.accountId)
                 MatchParticipant(
                     accountId = participant.accountId,
                     playerName = participant.playerName,

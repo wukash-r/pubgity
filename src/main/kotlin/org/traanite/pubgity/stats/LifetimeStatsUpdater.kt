@@ -1,7 +1,9 @@
-package org.traanite.pubgity.player
+package org.traanite.pubgity.stats
 
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import org.traanite.pubgity.player.PlayerProperties
+import org.traanite.pubgity.player.PlayerService
 import org.traanite.pubgity.pubgapi.PubgApiClient
 import org.traanite.pubgity.pubgapi.toLifetimeStats
 import java.time.Duration
@@ -11,7 +13,8 @@ import java.time.Instant
 class LifetimeStatsUpdater(
     private val playerService: PlayerService,
     private val pubgApiClient: PubgApiClient,
-    private val playerProperties: PlayerProperties
+    private val playerProperties: PlayerProperties,
+    private val statsService: StatsService
 ) {
 
     companion object {
@@ -19,7 +22,7 @@ class LifetimeStatsUpdater(
     }
 
     fun updateLifetimeStats(accountId: String, playerName: String): LifetimeStatsUpdateResult {
-        val latestSnapshot = playerService.getLatestLifetimeStats(accountId)
+        val latestSnapshot = statsService.getLatestLifetimeStats(accountId)
 
         if (latestSnapshot != null && isWithinCacheThreshold(latestSnapshot.capturedAt)) {
             return LifetimeStatsUpdateResult.SKIPPED
@@ -27,7 +30,7 @@ class LifetimeStatsUpdater(
 
         try {
             val stats = pubgApiClient.getLifetimeStats(accountId).data.attributes.toLifetimeStats()
-            playerService.saveLifetimeStatsSnapshot(accountId, stats)
+            statsService.saveLifetimeStatsSnapshot(accountId, stats)
 
             if (playerService.findByAccountId(accountId) == null) {
                 playerService.resolveOrCreatePlayer(

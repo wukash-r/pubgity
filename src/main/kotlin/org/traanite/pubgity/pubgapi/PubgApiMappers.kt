@@ -4,9 +4,9 @@ import org.traanite.pubgity.match.MatchParticipantStats
 import org.traanite.pubgity.match.ParticipantGameModeStats
 import org.traanite.pubgity.match.ParticipantLifetimeStats
 import org.traanite.pubgity.match.ParticipantModeStats
-import org.traanite.pubgity.player.GameModeStats
-import org.traanite.pubgity.player.LifetimeStats
-import org.traanite.pubgity.player.ModeStats
+import org.traanite.pubgity.stats.GameModeStats
+import org.traanite.pubgity.stats.LifetimeStats
+import org.traanite.pubgity.stats.ModeStats
 
 // --- Map to player/ lifetime stats types ---
 

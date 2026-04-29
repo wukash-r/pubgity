@@ -3,12 +3,10 @@ package org.traanite.pubgity.player
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import java.time.Instant
 
 @Service
 class PlayerService(
-    private val playerRepository: PlayerRepository,
-    private val lifetimeStatsRepository: PlayerLifetimeStatsRepository
+    private val playerRepository: PlayerRepository
 ) {
     companion object {
         private val logger = LoggerFactory.getLogger(PlayerService::class.java)
@@ -63,18 +61,6 @@ class PlayerService(
         }
     }
 
-    fun getLatestLifetimeStats(accountId: String): PlayerLifetimeStatsSnapshot? {
-        return lifetimeStatsRepository.findFirstByAccountIdOrderByCapturedAtDesc(accountId)
-    }
-
-    fun saveLifetimeStatsSnapshot(accountId: String, stats: LifetimeStats): PlayerLifetimeStatsSnapshot {
-        val snapshot = PlayerLifetimeStatsSnapshot(
-            accountId = accountId,
-            capturedAt = Instant.now(),
-            stats = stats
-        )
-        return lifetimeStatsRepository.save(snapshot)
-    }
 
     fun findByAccountIdIn(accountIds: Collection<String>): List<Player> {
         return playerRepository.findByAccountIdIn(accountIds)
