@@ -4,12 +4,12 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.traanite.pubgity.pubgapi.PubgApiClient
 import org.traanite.pubgity.pubgapi.toMatchParticipantStats
+import java.net.URI
 import java.time.Instant
 
 @Service
 class MatchDataFetcher(
-    private val matchService: MatchService,
-    private val pubgApiClient: PubgApiClient
+    private val matchService: MatchService, private val pubgApiClient: PubgApiClient
 ) {
     companion object {
         private val logger = LoggerFactory.getLogger(MatchDataFetcher::class.java)
@@ -24,6 +24,10 @@ class MatchDataFetcher(
         logger.info("Fetched metadata for {} matches, filtering new matches against DB", fetchedMatches.size)
         val newMatches = filterNewMatches(matchCount, fetchedMatches)
 
+        // todo save new matches metadata, match stats etc and come up with state enum
+        //  "match per job" executor will only fetch participants stats then, and after that update match object
+        //  emit an event with participant list so that Player objects are either updated or created with that matchId
+        //  on event, upsert on mongoTemplate needed with atomic $addToSet and setOnInsert playerId for thread safety
         logger.info("After filtering, {} new matches to process", newMatches.size)
         return newMatches
     }
@@ -70,15 +74,49 @@ class MatchDataFetcher(
             )
         }.filter { it.participants.isNotEmpty() }
 
+        val season =
+            if (matchResponse.data.attributes.seasonState != null
+                && matchResponse.data.attributes.seasonState == "progress"
+            ) {
+                pubgApiClient.getCurrentSeason()
+            } else {
+                null
+            }
         return FetchedMatch(
             matchId = matchId,
             createdAt = Instant.parse(createdAtStr),
+            seasonId = season?.id,
             gameMode = attrs.gameMode ?: "unknown",
             mapName = attrs.mapName ?: "unknown",
             duration = attrs.duration,
             rosters = rosters,
-            botCount = botCount
+            botCount = botCount,
+            telemetryUri = extractTelemetryUrl(matchId, matchResponse)
         )
+    }
+
+    private fun extractTelemetryUrl(matchId: String, matchResponse: org.traanite.pubgity.pubgapi.MatchResponse): URI? {
+        logger.info("Extracting telemetry url from match $matchId")
+        val assetIds = matchResponse.data.relationships?.assets?.data
+            ?.filter { it.type == "asset" }
+            ?.map { it.id }
+            ?: return null
+
+        logger.info("Match {}: found asset IDs in relationships: {}", matchId, assetIds)
+
+        val telemetryUrlStr = matchResponse.included
+            .firstOrNull { it.type == "asset" && it.id in assetIds && it.attributes?.name == "telemetry" }
+            ?.attributes?.url
+            ?: return null
+
+        logger.info("Match {}: found telemetry URL in included assets: {}", matchId, telemetryUrlStr)
+
+        return try {
+            URI(telemetryUrlStr)
+        } catch (_: Exception) {
+            logger.warn("Invalid telemetry URI in match {}: {}", matchId, telemetryUrlStr)
+            null
+        }
     }
 
 }
@@ -86,11 +124,13 @@ class MatchDataFetcher(
 data class FetchedMatch(
     val matchId: String,
     val createdAt: Instant,
+    val seasonId: String?,
     val gameMode: String,
     val mapName: String,
     val duration: Int,
     val rosters: List<FetchedRoster>,
-    val botCount: Int
+    val botCount: Int,
+    val telemetryUri: URI?
 ) {
     val realParticipants: List<SimpleParticipant>
         get() = rosters.flatMap { it.participants }.map { SimpleParticipant(it.accountId, it.playerName) }
@@ -101,10 +141,7 @@ data class SimpleParticipant(
 )
 
 data class FetchedRoster(
-    val rosterId: String,
-    val rank: Int,
-    val won: Boolean,
-    val participants: List<FetchedParticipant>
+    val rosterId: String, val rank: Int, val won: Boolean, val participants: List<FetchedParticipant>
 )
 
 data class FetchedParticipant(

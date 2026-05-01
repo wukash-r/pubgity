@@ -5,6 +5,7 @@ spring:
     user: # todo
       name: admin
       password: admin
+      roles: ADMIN
   mongodb:
     uri: mongodb://user:password@localhost:27017
     database: pubgity

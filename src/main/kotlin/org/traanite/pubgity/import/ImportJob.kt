@@ -1,12 +1,12 @@
-package org.traanite.pubgity.job
+package org.traanite.pubgity.import
 
 import org.bson.types.ObjectId
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.Instant
 
-@Document(collection = "update_jobs")
-data class UpdateJob(
+@Document(collection = "import_jobs")
+data class ImportJob(
     @Id val id: ObjectId? = null,
     val accountId: String? = null,
     val playerName: String,
@@ -28,6 +28,6 @@ enum class JobStatus {
 }
 
 enum class JobType {
-    FORK, SINGLE_MATCH
+    FETCH_PLAYER_MATCHES, FETCH_MATCH_STATS
 }
 

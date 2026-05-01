@@ -22,6 +22,22 @@ class PlayerService(
 
     fun findById(id: ObjectId): Player? = playerRepository.findById(id).orElse(null)
 
+    fun getSeasonStatsByPlayer(accountIds: Set<String>): Map<String, Map<String, SeasonStats>> {
+        return playerRepository.findByAccountIdIn(accountIds)
+            .associate { player ->
+                val stats = player.seasonStats.stats
+                player.accountId!! to stats
+            }
+    }
+
+    fun getLatestLifetimeStatsByPlayer(accountIds: Set<String>): Map<String, PlayerLifetimeStatsSnapshot?> {
+        return playerRepository.findByAccountIdIn(accountIds)
+            .associate { player ->
+                val stats = player.lifetimeStats.latestSnapshot
+                player.accountId!! to stats
+            }
+    }
+
     fun addPlayer(playerName: String): Player? {
         val trimmed = playerName.trim()
         if (trimmed.isBlank() || playerRepository.findByPlayerName(trimmed) != null) {
@@ -38,32 +54,12 @@ class PlayerService(
         playerRepository.deleteById(id)
     }
 
-    fun resolveOrCreatePlayer(accountId: String, currentName: String, originalName: String): Player {
-        val existing = playerRepository.findByAccountId(accountId)
-            ?: playerRepository.findByPlayerName(originalName)
-            ?: Player(playerName = currentName)
-
-        return playerRepository.save(
-            existing.copy(
-                accountId = accountId,
-                playerName = currentName
-            )
-        )
-    }
-
     fun appendMatchRefs(accountId: String, matchIds: List<String>) {
         val player = playerRepository.findByAccountId(accountId) ?: return
-        val existingIds = player.matches.map { it.matchId }.toSet()
-        val newRefs = matchIds.filter { it !in existingIds }.map { PlayerMatchRef(it) }
-        if (newRefs.isNotEmpty()) {
-            playerRepository.save(player.copy(matches = player.matches + newRefs))
-            logger.info("Appended {} match refs to player '{}'", newRefs.size, player.playerName)
+
+        player.addMatches(matchIds).let { updatedPlayer ->
+            playerRepository.save(updatedPlayer)
+            logger.info("Appended match refs: {}", updatedPlayer)
         }
     }
-
-
-    fun findByAccountIdIn(accountIds: Collection<String>): List<Player> {
-        return playerRepository.findByAccountIdIn(accountIds)
-    }
 }
-

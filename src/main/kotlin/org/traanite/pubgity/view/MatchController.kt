@@ -10,18 +10,23 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.server.ResponseStatusException
 import org.traanite.pubgity.match.MatchService
 import org.traanite.pubgity.player.PlayerService
-import org.traanite.pubgity.stats.StatsAggregationService
+import org.traanite.pubgity.view.aggregation.MatchStatsAggregationService
 
 @Controller
 @RequestMapping("/players/{accountId}/matches")
 class MatchController(
     private val matchService: MatchService,
     private val playerService: PlayerService,
-    private val statsAggregationService: StatsAggregationService
+    private val matchStatsAggregationService: MatchStatsAggregationService
 ) {
     companion object {
         private val logger = LoggerFactory.getLogger(MatchController::class.java)
     }
+
+    // todo a new chart
+    //  for all the participants
+    //  measure averages etc
+    //  for now-x seasons stats if available
 
     // todo dmg / round (mode)
     //  dmg / round (overall)
@@ -43,7 +48,7 @@ class MatchController(
             }
             .filter { it.second.lifetimeStatsSnapshot != null }
             .map { (roster, p) ->
-                val agg = statsAggregationService.aggregateParticipantStats(p.lifetimeStatsSnapshot!!, match.gameMode)
+                val agg = matchStatsAggregationService.aggregateParticipantStats(p.lifetimeStatsSnapshot!!, match.gameMode)
                 ParticipantView(
                     accountId = p.accountId,
                     playerName = p.playerName,

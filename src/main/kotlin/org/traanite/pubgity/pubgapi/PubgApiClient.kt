@@ -13,6 +13,8 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatusCode
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.body
+import org.traanite.pubgity.player.SeasonStats
+
 
 class PubgApiClient(
     private val endpoints: PubgApiProperties.EndpointProperties,
@@ -88,7 +90,7 @@ class PubgApiClient(
     fun getSeasons(): SeasonsResponse {
         val cached = seasonsCache.getIfPresent(SEASONS_CACHE_KEY)
         if (cached != null) {
-            logger.info("Seasons cache hit")
+            logger.debug("Seasons cache hit")
             return cached
         }
 
@@ -108,11 +110,46 @@ class PubgApiClient(
         }
     }
 
+    fun getCurrentSeason(): SeasonData? {
+        val seasons = getSeasons().data
+        val currentSeason = seasons.find { it.attributes?.isCurrentSeason ?: false }
+        if (currentSeason != null) {
+            logger.info("Current season found: {}", currentSeason.id)
+        } else {
+            logger.warn("No current season found in seasons data")
+        }
+        return currentSeason
+    }
+
     private fun <T> rateLimitedCall(block: () -> T): T {
         logger.debug("Acquiring rate limiter permit (available: {})", rateLimiter.metrics.availablePermissions)
         val rateLimited = RateLimiter.decorateCallable(rateLimiter) { block() }
         val retried = Retry.decorateCallable(retry, rateLimited)
         return retried.call()
+    }
+
+    fun getSeasonStats(seasonId: String, accountId: String): SeasonStats {
+        logger.info("Fetching season stats for accountId: {} seasonId: {}", accountId, seasonId)
+        return rateLimitedCall {
+            val response = restClient.get().uri(endpoints.seasonStats, accountId, seasonId).retrieve()
+                .onStatus(HttpStatusCode::is4xxClientError) { _, response ->
+                    if (response.statusCode == HttpStatus.TOO_MANY_REQUESTS) {
+                        logger.warn(
+                            "Rate limit exceeded when fetching season stats for accountId: {} seasonId: {}",
+                            accountId,
+                            seasonId
+                        )
+                        throw TooManyRequestsException()
+                    }
+                    throw PubgApiException("Season stats fetch failed: ${response.statusCode}")
+                }.body<PlayerSeasonResponse>()!!
+
+            val attrs = response.data.attributes
+            val gms = attrs?.gameModeStats?.toGameModeStats() ?: org.traanite.pubgity.player.GameModeStats()
+            val seasonIdFromResponse = response.data.relationships?.season?.data?.id
+                ?: throw IllegalStateException("Season ID missing in season stats response")
+            SeasonStats(seasonId = seasonIdFromResponse, gameModeStats = gms)
+        }
     }
 }
 

@@ -5,6 +5,7 @@ import org.bson.types.ObjectId
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
+import java.net.URI
 import java.time.Instant
 
 @Document(collection = "matches")
@@ -12,11 +13,13 @@ data class Match(
     @Id val id: ObjectId? = null,
     @Indexed(unique = true) val matchId: String,
     val createdAt: Instant,
+    val seasonId: String?,
     val gameMode: String,
     val mapName: String,
     val duration: Int,
     val botCount: Int = 0,
-    val rosters: List<MatchRoster> = emptyList()
+    val rosters: List<MatchRoster> = emptyList(),
+    val telemetryFileUri: URI?
 )
 
 data class MatchRoster(
@@ -31,7 +34,7 @@ data class MatchParticipant(
     val playerName: String,
     val matchStats: MatchParticipantStats? = null,
     // todo match snapshot as a table with matchIds as one of the properties in player package?
-    //  a lot of copying the same stuff here recently
+    //  a lot of copying the same stuff here
     val lifetimeStatsSnapshot: ParticipantLifetimeStats? = null
 )
 

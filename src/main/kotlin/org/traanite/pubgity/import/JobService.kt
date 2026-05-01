@@ -1,4 +1,4 @@
-package org.traanite.pubgity.job
+package org.traanite.pubgity.import
 
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
@@ -7,33 +7,38 @@ import org.traanite.pubgity.player.PlayerService
 
 @Service
 class JobService(
-    private val jobRepository: UpdateJobRepository,
+    private val jobRepository: ImportJobRepository,
     private val playerService: PlayerService
 ) {
     companion object {
         private val logger = LoggerFactory.getLogger(JobService::class.java)
     }
 
-    fun getJobs(): List<UpdateJob> = jobRepository.findAllByOrderByCreatedAtDesc()
+    fun getJobs(): List<ImportJob> = jobRepository.findAllByOrderByCreatedAtDesc()
 
-    fun queueJob(accountId: String?, playerName: String, matchCount: Int): UpdateJob {
+    fun queueJob(playerObjectId: ObjectId, matchCount: Int) {
+        val player = playerService.findById(playerObjectId)
+        if (player == null) {
+            logger.warn("Cannot queue job for not existing player $playerObjectId")
+            return
+        }
+
         val clampedCount = matchCount.coerceIn(1, 100)
         val job = jobRepository.save(
-            UpdateJob(
-                accountId = accountId,
-                playerName = playerName,
-                jobType = JobType.FORK,
+            ImportJob(
+                accountId = player.accountId,
+                playerName = player.playerName,
+                jobType = JobType.FETCH_PLAYER_MATCHES,
                 matchCount = clampedCount
             )
         )
         logger.info(
             "Queued update job {} for player '{}' (accountId={}, matchCount={})",
             job.id,
-            playerName,
-            accountId,
+            player.playerName,
+            player.accountId,
             clampedCount
         )
-        return job
     }
 
     // todo should just create job with propert createdAt and push to the top prio, but after implementing priority list
@@ -41,7 +46,7 @@ class JobService(
         logger.info("Retrying job $jobId")
         val job = jobRepository.findById(jobId).orElse(null) ?: return
         if (job.status == JobStatus.FAILED || job.status == JobStatus.CANCELLED) {
-            val retryJob = UpdateJob(
+            val retryJob = ImportJob(
                 accountId = job.accountId,
                 playerName = job.playerName,
                 jobType = job.jobType,
@@ -63,15 +68,5 @@ class JobService(
             logger.info("Cancelled job {}", jobId)
         }
     }
-
-    fun addPlayer(playerName: String) {
-        playerService.addPlayer(playerName)
-    }
-
-    fun removePlayer(playerId: ObjectId) {
-        playerService.removePlayer(playerId)
-    }
-
-    fun getPlayers() = playerService.findAll()
 }
 

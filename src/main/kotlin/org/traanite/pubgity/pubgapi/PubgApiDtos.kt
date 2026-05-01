@@ -42,7 +42,13 @@ data class MatchResponse(
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class MatchData(
     val id: String,
-    val attributes: MatchAttributes? = null
+    val attributes: MatchAttributes? = null,
+    val relationships: MatchDataRelationships? = null
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class MatchDataRelationships(
+    val assets: RelationshipData? = null
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -50,7 +56,8 @@ data class MatchAttributes(
     val createdAt: String? = null,
     val gameMode: String? = null,
     val mapName: String? = null,
-    val duration: Int = 0
+    val duration: Int = 0,
+    val seasonState: String? = null
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -64,7 +71,10 @@ data class MatchIncluded(
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class MatchIncludedAttributes(
     val stats: IncludedStats? = null,
-    val won: String? = null
+    val won: String? = null,
+    val name: String? = null,
+    @JsonProperty("URL")
+    val url: String? = null
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -184,3 +194,32 @@ data class SeasonAttributes(
     val isCurrentSeason: Boolean = false,
     val isOffseason: Boolean = false
 )
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class PlayerSeasonResponse(
+    val data: PlayerSeasonData
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class PlayerSeasonData(
+    val id: String? = null,
+    val attributes: PlayerSeasonAttributes? = null,
+    val relationships: PlayerSeasonRelationships? = null
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class PlayerSeasonAttributes(
+    val gameModeStats: ApiGameModeStats = ApiGameModeStats(),
+    val bestRankPoint: Double = 0.0
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class PlayerSeasonRelationships(
+    val season: RelationshipDataSingle? = null
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class RelationshipDataSingle(
+    val data: RelationshipItem? = null
+)
+

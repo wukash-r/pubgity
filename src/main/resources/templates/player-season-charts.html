@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+>
+<head>
+    <meta charset="UTF-8">
+    <title th:text="'Pubgity - ' + ${player.playerName} + ' · Season Charts'">Season Charts</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen">
+
+<div th:replace="~{fragments/nav :: nav}"></div>
+
+<main class="max-w-screen-xl mx-auto px-4 py-8 space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <a th:href="@{/players/{id}(id=${player.accountId})}"
+               class="inline-flex items-center gap-1 text-gray-400 hover:text-gray-200 text-sm mb-2 transition-colors">
+                ← Back to <span th:text="${player.playerName}" class="text-gray-200"></span>
+            </a>
+            <h1 class="text-2xl font-bold text-white">
+                Season Charts
+                <span class="text-gray-400 font-normal text-lg ml-2" th:text="${player.playerName}"></span>
+            </h1>
+            <p class="text-xs text-gray-500 mt-1">Each point is one match. Range = all participants with season data for that match's season.
+                <span class="text-orange-400 font-medium">Orange line = player's season stats.</span>
+            </p>
+        </div>
+        <a th:href="@{/players/{id}/charts/lifetime(id=${player.accountId})}"
+           class="px-3 py-2 bg-indigo-700 hover:bg-indigo-600 text-white text-sm rounded transition-colors">
+            ← Lifetime Charts
+        </a>
+    </div>
+
+    <div th:if="${#lists.isEmpty(perMatchSeasonStats)}"
+         class="bg-gray-800 border border-gray-700 rounded-lg px-5 py-8 text-center text-gray-500">
+        No per-match season stats available yet.
+    </div>
+
+    <div th:if="${!#lists.isEmpty(perMatchSeasonStats)}" class="space-y-6">
+        <div class="bg-gray-800 border border-gray-700 rounded-lg p-5"><canvas id="seasonKillsChart"></canvas></div>
+        <div class="bg-gray-800 border border-gray-700 rounded-lg p-5"><canvas id="seasonDamageChart"></canvas></div>
+        <div class="bg-gray-800 border border-gray-700 rounded-lg p-5"><canvas id="seasonDmgPerRoundLifetimeChart"></canvas></div>
+        <div class="bg-gray-800 border border-gray-700 rounded-lg p-5"><canvas id="seasonDmgPerRoundModeChart"></canvas></div>
+        <div class="bg-gray-800 border border-gray-700 rounded-lg p-5"><canvas id="seasonDmgPerMinuteLifetimeChart"></canvas></div>
+        <div class="bg-gray-800 border border-gray-700 rounded-lg p-5"><canvas id="seasonDmgPerMinuteModeChart"></canvas></div>
+        <div class="bg-gray-800 border border-gray-700 rounded-lg p-5"><canvas id="seasonKDChart"></canvas></div>
+        <div class="bg-gray-800 border border-gray-700 rounded-lg p-5"><canvas id="seasonTimeSurvivedChart"></canvas></div>
+        <div class="bg-gray-800 border border-gray-700 rounded-lg p-5"><canvas id="seasonWinsChart"></canvas></div>
+        <div class="bg-gray-800 border border-gray-700 rounded-lg p-5"><canvas id="seasonRoundsChart"></canvas></div>
+        <div class="bg-gray-800 border border-gray-700 rounded-lg p-5"><canvas id="seasonHSKillsChart"></canvas></div>
+        <div class="bg-gray-800 border border-gray-700 rounded-lg p-5"><canvas id="seasonTop10sChart"></canvas></div>
+        <div class="bg-gray-800 border border-gray-700 rounded-lg p-5"><canvas id="seasonParticipantsChart"></canvas></div>
+    </div>
+</main>
+
+<script th:if="${!#lists.isEmpty(perMatchSeasonStats)}" th:inline="javascript">
+    // ── Dark mode global defaults ──────────────────────────────
+    Chart.defaults.color = '#9ca3af';
+    Chart.defaults.borderColor = 'rgba(75,85,99,0.35)';
+    Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(15,23,42,0.95)';
+    Chart.defaults.plugins.tooltip.titleColor = '#f1f5f9';
+    Chart.defaults.plugins.tooltip.bodyColor = '#cbd5e1';
+    Chart.defaults.plugins.tooltip.borderColor = 'rgba(100,116,139,0.5)';
+    Chart.defaults.plugins.tooltip.borderWidth = 1;
+    Chart.defaults.scale.grid.color = 'rgba(75,85,99,0.3)';
+    Chart.defaults.scale.ticks.color = '#9ca3af';
+    Chart.defaults.layout.padding = { right: 24 };
+
+    // mode + map on axis; full label (date · mode · map) still shown in tooltip title
+    const xTickOpts = {
+        callback: (val, i) => {
+            const p = (sLabels[i] || '').split(' - ');
+            return p.length >= 3 ? p[1] + ' ' + p[2] : val;
+        },
+        color: '#9ca3af', maxRotation: 45, minRotation: 45
+    };
+
+    const sLabels = /*[[${perMatchSeasonStats.![label]}]]*/ [];
+
+    const sMinKills = /*[[${perMatchSeasonStats.![minKills]}]]*/ [];
+    const sMaxKills = /*[[${perMatchSeasonStats.![maxKills]}]]*/ [];
+    const sMedianKills = /*[[${perMatchSeasonStats.![medianKills]}]]*/ [];
+    const sAvgKills = /*[[${perMatchSeasonStats.![avgKills]}]]*/ [];
+
+    const sMinDamage = /*[[${perMatchSeasonStats.![minDamage]}]]*/ [];
+    const sMaxDamage = /*[[${perMatchSeasonStats.![maxDamage]}]]*/ [];
+    const sMedianDamage = /*[[${perMatchSeasonStats.![medianDamage]}]]*/ [];
+    const sAvgDamage = /*[[${perMatchSeasonStats.![avgDamage]}]]*/ [];
+
+    const sMinDmgPerRoundLifetime = /*[[${perMatchSeasonStats.![minDmgPerRoundLifetime]}]]*/ [];
+    const sMaxDmgPerRoundLifetime = /*[[${perMatchSeasonStats.![maxDmgPerRoundLifetime]}]]*/ [];
+    const sMedianDmgPerRoundLifetime = /*[[${perMatchSeasonStats.![medianDmgPerRoundLifetime]}]]*/ [];
+    const sAvgDmgPerRoundLifetime = /*[[${perMatchSeasonStats.![avgDmgPerRoundLifetime]}]]*/ [];
+
+    const sMinDmgPerRoundMode = /*[[${perMatchSeasonStats.![minDmgPerRoundMode]}]]*/ [];
+    const sMaxDmgPerRoundMode = /*[[${perMatchSeasonStats.![maxDmgPerRoundMode]}]]*/ [];
+    const sMedianDmgPerRoundMode = /*[[${perMatchSeasonStats.![medianDmgPerRoundMode]}]]*/ [];
+    const sAvgDmgPerRoundMode = /*[[${perMatchSeasonStats.![avgDmgPerRoundMode]}]]*/ [];
+
+    const sMinDmgPerMinuteLifetime = /*[[${perMatchSeasonStats.![minDmgPerMinuteLifetime]}]]*/ [];
+    const sMaxDmgPerMinuteLifetime = /*[[${perMatchSeasonStats.![maxDmgPerMinuteLifetime]}]]*/ [];
+    const sMedianDmgPerMinuteLifetime = /*[[${perMatchSeasonStats.![medianDmgPerMinuteLifetime]}]]*/ [];
+    const sAvgDmgPerMinuteLifetime = /*[[${perMatchSeasonStats.![avgDmgPerMinuteLifetime]}]]*/ [];
+
+    const sMinDmgPerMinuteMode = /*[[${perMatchSeasonStats.![minDmgPerMinuteMode]}]]*/ [];
+    const sMaxDmgPerMinuteMode = /*[[${perMatchSeasonStats.![maxDmgPerMinuteMode]}]]*/ [];
+    const sMedianDmgPerMinuteMode = /*[[${perMatchSeasonStats.![medianDmgPerMinuteMode]}]]*/ [];
+    const sAvgDmgPerMinuteMode = /*[[${perMatchSeasonStats.![avgDmgPerMinuteMode]}]]*/ [];
+
+    const sMinKD = /*[[${perMatchSeasonStats.![minKD]}]]*/ [];
+    const sMaxKD = /*[[${perMatchSeasonStats.![maxKD]}]]*/ [];
+    const sMedianKD = /*[[${perMatchSeasonStats.![medianKD]}]]*/ [];
+    const sAvgKD = /*[[${perMatchSeasonStats.![avgKD]}]]*/ [];
+
+    const sSeasonParticipantCounts = /*[[${perMatchSeasonStats.![seasonParticipantCount]}]]*/ [];
+
+    const sPlayerKills = /*[[${perMatchSeasonStats.![playerSeasonKills]}]]*/ [];
+    const sPlayerDamage = /*[[${perMatchSeasonStats.![playerSeasonDamage]}]]*/ [];
+    const sPlayerKD = /*[[${perMatchSeasonStats.![playerSeasonKD]}]]*/ [];
+    const sPlayerDmgPerRoundLifetime = /*[[${perMatchSeasonStats.![playerSeasonDmgPerRoundLifetime]}]]*/ [];
+    const sPlayerDmgPerRoundMode = /*[[${perMatchSeasonStats.![playerSeasonDmgPerRoundMode]}]]*/ [];
+    const sPlayerDmgPerMinuteLifetime = /*[[${perMatchSeasonStats.![playerSeasonDmgPerMinuteLifetime]}]]*/ [];
+    const sPlayerDmgPerMinuteMode = /*[[${perMatchSeasonStats.![playerSeasonDmgPerMinuteMode]}]]*/ [];
+
+    const rangeStyle = (color) => ({
+        borderColor: color, backgroundColor: color.replace('1)', '0.12)'),
+        fill: '+1', tension: 0.2, borderWidth: 1, pointRadius: 2
+    });
+    const solidStyle = (color) => ({borderColor: color, fill: false, tension: 0.2, borderWidth: 2, pointRadius: 2});
+    const dashStyle  = (color) => ({borderColor: color, fill: false, tension: 0.2, borderWidth: 2, borderDash: [5,5], pointRadius: 2});
+    const playerStyle = {
+        borderColor: 'rgba(249,115,22,1)', fill: false, tension: 0.2,
+        borderWidth: 3, pointRadius: 4, pointBackgroundColor: 'rgba(249,115,22,1)'
+    };
+
+    function hiddenLine(id, datasets, title) {
+        const c = new Chart(document.getElementById(id), {
+            type: 'line',
+            data: {labels: sLabels, datasets},
+            options: {responsive: true, plugins: {title: {display: true, text: title, color: '#e5e7eb'}},
+                scales: {x: {ticks: xTickOpts}}}
+        });
+        c.getDatasetMeta(0).hidden = true;
+        c.getDatasetMeta(1).hidden = true;
+        c.update();
+        return c;
+    }
+
+    hiddenLine('seasonKillsChart', [
+        {label:'Min', data:sMinKills, ...rangeStyle('rgba(56,189,248,1)')},
+        {label:'Max', data:sMaxKills, ...rangeStyle('rgba(56,189,248,1)'), fill:false},
+        {label:'Median', data:sMedianKills, ...solidStyle('rgba(56,189,248,1)')},
+        {label:'Avg', data:sAvgKills, ...dashStyle('rgba(251,113,133,1)')},
+        {label:'Player (season)', data:sPlayerKills, ...playerStyle}
+    ], 'Season – Participant Kills (all modes)');
+
+    hiddenLine('seasonDamageChart', [
+        {label:'Min', data:sMinDamage, ...rangeStyle('rgba(52,211,153,1)')},
+        {label:'Max', data:sMaxDamage, ...rangeStyle('rgba(52,211,153,1)'), fill:false},
+        {label:'Median', data:sMedianDamage, ...solidStyle('rgba(52,211,153,1)')},
+        {label:'Avg', data:sAvgDamage, ...dashStyle('rgba(251,191,36,1)')},
+        {label:'Player (season)', data:sPlayerDamage, ...playerStyle}
+    ], 'Season – Participant Damage (all modes)');
+
+    hiddenLine('seasonDmgPerRoundLifetimeChart', [
+        {label:'Min', data:sMinDmgPerRoundLifetime, ...rangeStyle('rgba(56,189,248,1)')},
+        {label:'Max', data:sMaxDmgPerRoundLifetime, ...rangeStyle('rgba(56,189,248,1)'), fill:false},
+        {label:'Median', data:sMedianDmgPerRoundLifetime, ...solidStyle('rgba(56,189,248,1)')},
+        {label:'Avg', data:sAvgDmgPerRoundLifetime, ...dashStyle('rgba(251,191,36,1)')},
+        {label:'Player (season)', data:sPlayerDmgPerRoundLifetime, ...playerStyle}
+    ], 'Season – Damage per Round (all modes)');
+
+    hiddenLine('seasonDmgPerRoundModeChart', [
+        {label:'Min', data:sMinDmgPerRoundMode, ...rangeStyle('rgba(167,139,250,1)')},
+        {label:'Max', data:sMaxDmgPerRoundMode, ...rangeStyle('rgba(167,139,250,1)'), fill:false},
+        {label:'Median', data:sMedianDmgPerRoundMode, ...solidStyle('rgba(167,139,250,1)')},
+        {label:'Avg', data:sAvgDmgPerRoundMode, ...dashStyle('rgba(253,224,71,1)')},
+        {label:'Player (season)', data:sPlayerDmgPerRoundMode, ...playerStyle}
+    ], 'Season – Damage per Round (match mode)');
+
+    hiddenLine('seasonDmgPerMinuteLifetimeChart', [
+        {label:'Min', data:sMinDmgPerMinuteLifetime, ...rangeStyle('rgba(52,211,153,1)')},
+        {label:'Max', data:sMaxDmgPerMinuteLifetime, ...rangeStyle('rgba(52,211,153,1)'), fill:false},
+        {label:'Median', data:sMedianDmgPerMinuteLifetime, ...solidStyle('rgba(52,211,153,1)')},
+        {label:'Avg', data:sAvgDmgPerMinuteLifetime, ...dashStyle('rgba(251,113,133,1)')},
+        {label:'Player (season)', data:sPlayerDmgPerMinuteLifetime, ...playerStyle}
+    ], 'Season – Damage per Minute (all modes)');
+
+    hiddenLine('seasonDmgPerMinuteModeChart', [
+        {label:'Min', data:sMinDmgPerMinuteMode, ...rangeStyle('rgba(251,113,133,1)')},
+        {label:'Max', data:sMaxDmgPerMinuteMode, ...rangeStyle('rgba(251,113,133,1)'), fill:false},
+        {label:'Median', data:sMedianDmgPerMinuteMode, ...solidStyle('rgba(251,113,133,1)')},
+        {label:'Avg', data:sAvgDmgPerMinuteMode, ...dashStyle('rgba(56,189,248,1)')},
+        {label:'Player (season)', data:sPlayerDmgPerMinuteMode, ...playerStyle}
+    ], 'Season – Damage per Minute (match mode)');
+
+    hiddenLine('seasonKDChart', [
+        {label:'Min', data:sMinKD, ...rangeStyle('rgba(167,139,250,1)')},
+        {label:'Max', data:sMaxKD, ...rangeStyle('rgba(167,139,250,1)'), fill:false},
+        {label:'Median', data:sMedianKD, ...solidStyle('rgba(167,139,250,1)')},
+        {label:'Avg', data:sAvgKD, ...dashStyle('rgba(253,224,71,1)')},
+        {label:'Player (season)', data:sPlayerKD, ...playerStyle}
+    ], 'Season – K/D Ratio (match mode)');
+
+    hiddenLine('seasonTimeSurvivedChart', [
+        {label:'Min', data:/*[[${perMatchSeasonStats.![minTimeSurvived]}]]*/ [], ...rangeStyle('rgba(253,224,71,1)')},
+        {label:'Max', data:/*[[${perMatchSeasonStats.![maxTimeSurvived]}]]*/ [], ...rangeStyle('rgba(253,224,71,1)'), fill:false},
+        {label:'Median', data:/*[[${perMatchSeasonStats.![medianTimeSurvived]}]]*/ [], ...solidStyle('rgba(253,224,71,1)')},
+        {label:'Avg', data:/*[[${perMatchSeasonStats.![avgTimeSurvived]}]]*/ [], ...dashStyle('rgba(52,211,153,1)')},
+        {label:'Player (season)', data:/*[[${perMatchSeasonStats.![playerSeasonTimeSurvived]}]]*/ [], ...playerStyle}
+    ], 'Season – Time Survived (all modes)');
+
+    hiddenLine('seasonWinsChart', [
+        {label:'Min', data:/*[[${perMatchSeasonStats.![minWins]}]]*/ [], ...rangeStyle('rgba(52,211,153,1)')},
+        {label:'Max', data:/*[[${perMatchSeasonStats.![maxWins]}]]*/ [], ...rangeStyle('rgba(52,211,153,1)'), fill:false},
+        {label:'Median', data:/*[[${perMatchSeasonStats.![medianWins]}]]*/ [], ...solidStyle('rgba(52,211,153,1)')},
+        {label:'Avg', data:/*[[${perMatchSeasonStats.![avgWins]}]]*/ [], ...dashStyle('rgba(251,191,36,1)')},
+        {label:'Player (season)', data:/*[[${perMatchSeasonStats.![playerSeasonWins]}]]*/ [], ...playerStyle}
+    ], 'Season – Wins (match mode)');
+
+    hiddenLine('seasonRoundsChart', [
+        {label:'Min', data:/*[[${perMatchSeasonStats.![minRoundsPlayed]}]]*/ [], ...rangeStyle('rgba(167,139,250,1)')},
+        {label:'Max', data:/*[[${perMatchSeasonStats.![maxRoundsPlayed]}]]*/ [], ...rangeStyle('rgba(167,139,250,1)'), fill:false},
+        {label:'Median', data:/*[[${perMatchSeasonStats.![medianRoundsPlayed]}]]*/ [], ...solidStyle('rgba(167,139,250,1)')},
+        {label:'Avg', data:/*[[${perMatchSeasonStats.![avgRoundsPlayed]}]]*/ [], ...dashStyle('rgba(253,224,71,1)')},
+        {label:'Player (season)', data:/*[[${perMatchSeasonStats.![playerSeasonRoundsPlayed]}]]*/ [], ...playerStyle}
+    ], 'Season – Rounds Played (match mode)');
+
+    hiddenLine('seasonHSKillsChart', [
+        {label:'Min', data:/*[[${perMatchSeasonStats.![minHeadshotKills]}]]*/ [], ...rangeStyle('rgba(251,113,133,1)')},
+        {label:'Max', data:/*[[${perMatchSeasonStats.![maxHeadshotKills]}]]*/ [], ...rangeStyle('rgba(251,113,133,1)'), fill:false},
+        {label:'Median', data:/*[[${perMatchSeasonStats.![medianHeadshotKills]}]]*/ [], ...solidStyle('rgba(251,113,133,1)')},
+        {label:'Avg', data:/*[[${perMatchSeasonStats.![avgHeadshotKills]}]]*/ [], ...dashStyle('rgba(56,189,248,1)')},
+        {label:'Player (season)', data:/*[[${perMatchSeasonStats.![playerSeasonHeadshotKills]}]]*/ [], ...playerStyle}
+    ], 'Season – Headshot Kills (match mode)');
+
+    hiddenLine('seasonTop10sChart', [
+        {label:'Min', data:/*[[${perMatchSeasonStats.![minTop10s]}]]*/ [], ...rangeStyle('rgba(167,139,250,1)')},
+        {label:'Max', data:/*[[${perMatchSeasonStats.![maxTop10s]}]]*/ [], ...rangeStyle('rgba(167,139,250,1)'), fill:false},
+        {label:'Median', data:/*[[${perMatchSeasonStats.![medianTop10s]}]]*/ [], ...solidStyle('rgba(167,139,250,1)')},
+        {label:'Avg', data:/*[[${perMatchSeasonStats.![avgTop10s]}]]*/ [], ...dashStyle('rgba(253,224,71,1)')},
+        {label:'Player (season)', data:/*[[${perMatchSeasonStats.![playerSeasonTop10s]}]]*/ [], ...playerStyle}
+    ], 'Season – Top 10s (all modes)');
+
+    new Chart(document.getElementById('seasonParticipantsChart'), {
+        type: 'bar',
+        data: {labels: sLabels, datasets: [{
+            label: 'Participants with Season Stats',
+            data: sSeasonParticipantCounts,
+            backgroundColor: 'rgba(56,189,248,0.5)',
+            borderColor: 'rgba(56,189,248,1)',
+            borderWidth: 1
+        }]},
+        options: {responsive: true, scales: {y: {ticks: {stepSize: 1}}, x: {ticks: xTickOpts}},
+            plugins: {title: {display: true, text: 'Participants with Season Stats per Match', color: '#e5e7eb'}}}
+    });
+</script>
+</body>
+</html>
+

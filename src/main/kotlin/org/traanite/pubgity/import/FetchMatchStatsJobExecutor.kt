@@ -1,4 +1,4 @@
-package org.traanite.pubgity.job
+package org.traanite.pubgity.import
 
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
@@ -6,24 +6,21 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.traanite.pubgity.match.*
 import org.traanite.pubgity.player.PlayerService
+import org.traanite.pubgity.player.PlayerStatsUpdater
+import org.traanite.pubgity.player.StatsUpdateResult
 import org.traanite.pubgity.pubgapi.toParticipantLifetimeStats
-import org.traanite.pubgity.stats.LifetimeStatsUpdateResult
-import org.traanite.pubgity.stats.LifetimeStatsUpdater
-import org.traanite.pubgity.stats.StatsService
-import java.time.Instant
 
 @Service
-class SingleMatchJobExecutor(
-    private val jobRepository: UpdateJobRepository,
+class FetchMatchStatsJobExecutor(
+    jobRepository: ImportJobRepository,
     private val playerService: PlayerService,
     private val matchService: MatchService,
     private val matchDataFetcher: MatchDataFetcher,
-    private val lifetimeStatsUpdater: LifetimeStatsUpdater,
-    private val statsService: StatsService
-) {
+    private val playerStatsUpdater: PlayerStatsUpdater
+) : BaseImportJobExecutor(jobRepository, JobType.FETCH_MATCH_STATS) {
+
     companion object {
-        private val logger = LoggerFactory.getLogger(SingleMatchJobExecutor::class.java)
-        private val jobType: JobType = JobType.SINGLE_MATCH
+        private val logger = LoggerFactory.getLogger(FetchMatchStatsJobExecutor::class.java)
     }
 
     // todo for future multi threading
@@ -36,53 +33,33 @@ class SingleMatchJobExecutor(
     //  when clicked on frontend check if job hasn't been retried yet, if so, just skip
 
     // todo save ban type
+
     @Scheduled(fixedDelay = 5000)
-    fun processNextJob() {
-        logger.info("Checking for next $jobType job...")
-        if (jobRepository.existsByJobTypeAndStatus(jobType, JobStatus.RUNNING)) {
-            logger.info("A job is already running, skipping")
-            return
-        }
-        val job = jobRepository.findFirstByJobTypeAndStatusOrderByCreatedAtAsc(jobType, JobStatus.QUEUED) ?: return
-        val jobId = job.id!!
-        logger.info("Picked up job {} for player '{}' (matchCount={})", jobId, job.playerName, job.matchCount)
-
-        jobRepository.save(job.copy(status = JobStatus.RUNNING, startedAt = Instant.now()))
-
-        try {
-            executeJob(job)
-            markJobCompleted(jobId)
-        } catch (e: MatchExistsException) {
-            logger.info("Job {} match {} already exists in DB, marking job as completed", jobId, job.matchId)
-            markJobCancelled(jobId, job, e)
-        } catch (_: JobCancelledException) {
-            logger.info("Job {} was cancelled during execution", jobId)
-        } catch (e: Exception) {
-            logger.error("Job {} failed for player '{}'", jobId, job.playerName, e)
-            markJobFailed(jobId, job, e)
-        }
+    private fun jobScheduledTask() {
+        processNextJob()
     }
 
-    private fun executeJob(job: UpdateJob) {
+    override fun executeJob(job: ImportJob) {
         val jobId = job.id!!
         ensureMatchNotExists(jobId, job.matchId!!)
         val newMatch = collectNewMatchMetadata(jobId, job.matchId)
         val participants = collectParticipants(jobId, newMatch)
         fetchLifetimeStats(jobId, participants)
+        fetchCurrentSeasonStats(jobId, participants)
         saveMatchSnapshot(jobId, newMatch)
     }
 
     private fun ensureMatchNotExists(jobId: ObjectId, matchId: String) {
         updateProgress(jobId, "Ensuring match is not already in DB...")
         if (matchService.existsByMatchId(matchId)) {
-            throw MatchExistsException("Match $matchId already exists in DB")
+            throw JobCancelledByExecutor("Match $matchId already exists in DB")
         }
     }
 
     private fun collectNewMatchMetadata(jobId: ObjectId, matchId: String): FetchedMatch {
         updateProgress(jobId, "Calling match fetcher for new matches...")
-        val newMatch = matchDataFetcher.fetchSingleMatch(matchId)
-            ?: throw IllegalStateException("No match found for $matchId")
+        val newMatch =
+            matchDataFetcher.fetchSingleMatch(matchId) ?: throw IllegalStateException("No match found for $matchId")
         return newMatch
     }
 
@@ -105,19 +82,40 @@ class SingleMatchJobExecutor(
                 "Fetching lifetime stats (${index + 1}/${participants.size}, $fetched fetched, $skipped cached)"
             updateProgress(jobId, progress)
 
-            // todo pull stats per season
-            val updateLifetimeStats =
-                lifetimeStatsUpdater.updateLifetimeStats(participant.accountId, participant.playerName)
-            when (updateLifetimeStats) {
-                LifetimeStatsUpdateResult.UPDATED -> fetched++
-                LifetimeStatsUpdateResult.SKIPPED -> skipped++
-                LifetimeStatsUpdateResult.FAILED -> throw IllegalStateException(
+            val updateResult = playerStatsUpdater.updateLifetimeStats(participant.accountId, participant.playerName)
+            when (updateResult) {
+                StatsUpdateResult.UPDATED -> fetched++
+                StatsUpdateResult.SKIPPED -> skipped++
+                StatsUpdateResult.FAILED -> throw IllegalStateException(
                     "Lifetime stats update failed for player ${participant.playerName} (${participant.accountId})"
                 )
             }
         }
 
         logger.info("Lifetime stats: {} total, {} fetched, {} cached", participants.size, fetched, skipped)
+    }
+
+    private fun fetchCurrentSeasonStats(jobId: ObjectId, participants: Set<SimpleParticipant>) {
+        var fetched = 0
+        var skipped = 0
+
+        participants.forEachIndexed { index, participant ->
+            val progress =
+                "Fetching current season stats (${index + 1}/${participants.size}, $fetched fetched, $skipped cached)"
+            updateProgress(jobId, progress)
+
+            val updateResult =
+                playerStatsUpdater.updateCurrentSeasonPlayerStats(participant.accountId, participant.playerName)
+            when (updateResult) {
+                StatsUpdateResult.UPDATED -> fetched++
+                StatsUpdateResult.SKIPPED -> skipped++
+                StatsUpdateResult.FAILED -> throw IllegalStateException(
+                    "Current season stats update failed for player ${participant.playerName} (${participant.accountId})"
+                )
+            }
+        }
+
+        logger.info("Current season stats: {} total, {} fetched, {} cached", participants.size, fetched, skipped)
     }
 
     private fun saveMatchSnapshot(jobId: ObjectId, fetchedMatch: FetchedMatch) {
@@ -127,9 +125,14 @@ class SingleMatchJobExecutor(
     }
 
     private fun saveMatchSnapshot(fetchedMatch: FetchedMatch) {
+        val participantsAccountIds =
+            fetchedMatch.rosters.flatMap { roster -> roster.participants.map { it.accountId } }.toSet()
+
+        val participatingPlayers = playerService.getLatestLifetimeStatsByPlayer(participantsAccountIds)
+
         val rosterSnapshots = fetchedMatch.rosters.map { roster ->
             val participantSnapshots = roster.participants.map { participant ->
-                val latestSnapshot = statsService.getLatestLifetimeStats(participant.accountId)
+                val latestSnapshot = participatingPlayers[participant.accountId]
                 MatchParticipant(
                     accountId = participant.accountId,
                     playerName = participant.playerName,
@@ -146,11 +149,13 @@ class SingleMatchJobExecutor(
             Match(
                 matchId = fetchedMatch.matchId,
                 createdAt = fetchedMatch.createdAt,
+                seasonId = fetchedMatch.seasonId,
                 gameMode = fetchedMatch.gameMode,
                 mapName = fetchedMatch.mapName,
                 duration = fetchedMatch.duration,
                 botCount = fetchedMatch.botCount,
-                rosters = rosterSnapshots
+                rosters = rosterSnapshots,
+                telemetryFileUri = fetchedMatch.telemetryUri
             )
         )
 
@@ -159,53 +164,5 @@ class SingleMatchJobExecutor(
             playerService.appendMatchRefs(participant.accountId, listOf(fetchedMatch.matchId))
         }
     }
-
-    private fun isCancelled(jobId: ObjectId): Boolean {
-        val current = jobRepository.findById(jobId).orElse(null) ?: return true
-        return current.status == JobStatus.CANCELLED
-    }
-
-    private fun markJobCompleted(jobId: ObjectId) {
-        val current = jobRepository.findById(jobId).get()
-        if (current.status == JobStatus.CANCELLED) return
-        jobRepository.save(current.copy(status = JobStatus.COMPLETED, completedAt = Instant.now()))
-        logger.info("Job {} completed", jobId)
-    }
-
-    private fun markJobFailed(jobId: ObjectId, job: UpdateJob, error: Exception) {
-        val current = jobRepository.findById(jobId).orElse(job)!!
-        if (current.status == JobStatus.CANCELLED) return
-        jobRepository.save(
-            current.copy(
-                status = JobStatus.FAILED, completedAt = Instant.now(), errorMessage = error.message?.take(500)
-            )
-        )
-    }
-
-    private fun markJobCancelled(jobId: ObjectId, job: UpdateJob, error: Exception) {
-        val current = jobRepository.findById(jobId).orElse(job)!!
-        jobRepository.save(
-            current.copy(
-                status = JobStatus.SKIPPED, completedAt = Instant.now(), errorMessage = error.message?.take(500)
-            )
-        )
-    }
-
-    private fun updateProgress(jobId: ObjectId, progress: String) {
-        ensureJobNotCancelled(jobId)
-        jobRepository.findById(jobId).ifPresent {
-            if (it.status != JobStatus.CANCELLED) {
-                jobRepository.save(it.copy(progress = progress))
-            }
-        }
-    }
-
-    private fun ensureJobNotCancelled(jobId: ObjectId) {
-        if (isCancelled(jobId)) {
-            logger.info("Job $jobId cancelled, aborting")
-            throw IllegalStateException("Job $jobId aborted")
-        }
-    }
-
 }
 

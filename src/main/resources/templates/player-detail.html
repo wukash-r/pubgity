@@ -1,711 +1,366 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <title th:text="'Pubgity - ' + ${player.playerName}">Player Detail</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-<div class="container mt-4">
-    <a href="/players" class="btn btn-outline-secondary btn-sm mb-3">&larr; Back to players</a>
+<body class="bg-gray-950 text-gray-100 min-h-screen">
 
-    <h1 th:text="${player.playerName}">Player Name</h1>
-    <p class="text-muted">
-        <small th:text="'Account: ' + ${player.accountId}"></small><br>
-        <small th:text="'Last stats snapshot: ' + (${latestStats} != null ? ${latestStats.capturedAt} : 'Never')"></small><br>
-        <small th:text="${#lists.size(matches)} + ' matches loaded'"></small>
-    </p>
+<div th:replace="~{fragments/nav :: nav}"></div>
 
-    <!-- Lifetime Stats -->
-    <div th:if="${latestStats == null}" class="alert alert-warning">
-        No lifetime stats available yet. Run an update job from the jobs panel.
+<main class="max-w-screen-xl mx-auto px-4 py-8 space-y-8">
+    <div>
+        <a href="/players" class="inline-flex items-center gap-1 text-gray-400 hover:text-gray-200 text-sm mb-4 transition-colors">
+            ← Back to players
+        </a>
+        <h1 class="text-3xl font-bold text-white" th:text="${player.playerName}">Player Name</h1>
+        <div class="text-xs text-gray-500 mt-1 space-y-0.5">
+            <p><span class="text-gray-400">Account:</span> <span class="font-mono" th:text="${player.accountId}"></span></p>
+            <p><span class="text-gray-400">Last stats snapshot:</span>
+                <span th:text="${latestStats} != null ? ${latestStats.capturedAt} : 'Never'"></span></p>
+            <p><span th:text="${#lists.size(matches)}"></span> matches loaded</p>
+        </div>
     </div>
 
-    <!-- Current Aggregated Stats -->
-    <div th:if="${playerAggregated != null}" class="mb-4">
-        <h3>Current Aggregated Stats (All Modes)</h3>
-        <div class="table-responsive">
-            <table class="table table-sm table-bordered" style="max-width: 600px;">
-                <tbody>
-                <tr>
-                    <td>Total Kills</td>
-                    <td th:text="${playerAggregated.totalKills}"></td>
+    <!-- No stats warning -->
+    <div th:if="${latestStats == null}"
+         class="bg-amber-950/40 border border-amber-700/50 text-amber-300 rounded-lg px-5 py-4 text-sm">
+        No lifetime stats available yet. Run an update job from the
+        <a sec:authorize="hasRole('ADMIN')" href="/jobs" class="underline hover:text-amber-200">jobs panel</a>
+        <span sec:authorize="!hasRole('ADMIN')">jobs panel</span>.
+    </div>
+
+    <!-- Aggregated summary cards -->
+    <div th:if="${playerAggregated != null or playerSeasonAggregated != null}" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Lifetime aggregated -->
+        <div th:if="${playerAggregated != null}" class="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+            <div class="px-5 py-3 border-b border-gray-700 flex justify-between items-center">
+                <h2 class="font-semibold text-gray-100">Lifetime — All Modes</h2>
+                <a th:href="@{/players/{id}/charts/lifetime(id=${player.accountId})}"
+                   class="text-xs px-3 py-1.5 bg-indigo-700 hover:bg-indigo-600 text-white rounded transition-colors">
+                    View Charts →
+                </a>
+            </div>
+            <table class="w-full text-sm">
+                <tbody class="divide-y divide-gray-700/40">
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-5 py-2 text-gray-400">Total Kills</td>
+                    <td class="px-5 py-2 text-gray-100 font-medium text-right" th:text="${playerAggregated.totalKills}"></td>
                 </tr>
-                <tr>
-                    <td>Total Damage</td>
-                    <td th:text="${#numbers.formatDecimal(playerAggregated.totalDamage, 1, 0)}"></td>
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-5 py-2 text-gray-400">Total Damage</td>
+                    <td class="px-5 py-2 text-gray-100 font-medium text-right" th:text="${#numbers.formatDecimal(playerAggregated.totalDamage, 1, 0)}"></td>
                 </tr>
-                <tr>
-                    <td>Total Wins</td>
-                    <td th:text="${playerAggregated.totalWins}"></td>
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-5 py-2 text-gray-400">Total Wins</td>
+                    <td class="px-5 py-2 text-gray-100 font-medium text-right" th:text="${playerAggregated.totalWins}"></td>
                 </tr>
-                <tr>
-                    <td>Total Rounds Played</td>
-                    <td th:text="${playerAggregated.totalRoundsPlayed}"></td>
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-5 py-2 text-gray-400">Rounds Played</td>
+                    <td class="px-5 py-2 text-gray-100 font-medium text-right" th:text="${playerAggregated.totalRoundsPlayed}"></td>
                 </tr>
-                <tr>
-                    <td>Total Top 10s</td>
-                    <td th:text="${playerAggregated.totalTop10s}"></td>
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-5 py-2 text-gray-400">Top 10s</td>
+                    <td class="px-5 py-2 text-gray-100 font-medium text-right" th:text="${playerAggregated.totalTop10s}"></td>
                 </tr>
-                <tr>
-                    <td>Total Headshot Kills</td>
-                    <td th:text="${playerAggregated.totalHeadshotKills}"></td>
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-5 py-2 text-gray-400">Headshot Kills</td>
+                    <td class="px-5 py-2 text-gray-100 font-medium text-right" th:text="${playerAggregated.totalHeadshotKills}"></td>
                 </tr>
-                <tr>
-                    <td>Total Time Survived</td>
-                    <td th:text="${#numbers.formatDecimal(playerAggregated.totalTimeSurvived / 3600, 1, 1)} + 'h'"></td>
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-5 py-2 text-gray-400">Time Survived</td>
+                    <td class="px-5 py-2 text-gray-100 font-medium text-right" th:text="${#numbers.formatDecimal(playerAggregated.totalTimeSurvived / 3600, 1, 1)} + 'h'"></td>
                 </tr>
-                <tr>
-                    <td>Best Rank Point</td>
-                    <td th:text="${#numbers.formatDecimal(playerAggregated.bestRankPoint, 1, 1)}"></td>
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-5 py-2 text-gray-400">Dmg / Round</td>
+                    <td class="px-5 py-2 text-gray-100 font-medium text-right" th:text="${#numbers.formatDecimal(playerAggregated.dmgPerRound, 1, 1)}"></td>
                 </tr>
-                <tr>
-                    <td>Total K/D</td>
-                    <td th:text="${(playerAggregated.totalRoundsPlayed ?: 0) > 0 ? T(java.lang.String).format('%.2f', ((playerAggregated.totalKills ?: 0) * 1.0 / playerAggregated.totalRoundsPlayed)) : '0.00'}">
-                        0.00
-                    </td>
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-5 py-2 text-gray-400">Best Rank Point</td>
+                    <td class="px-5 py-2 text-gray-100 font-medium text-right" th:text="${#numbers.formatDecimal(playerAggregated.bestRankPoint, 1, 1)}"></td>
+                </tr>
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-5 py-2 text-gray-400">K/D</td>
+                    <td class="px-5 py-2 text-gray-100 font-medium text-right" th:text="${#numbers.formatDecimal(playerAggregated.kd, 1, 2)}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Season aggregated -->
+        <div th:if="${playerSeasonAggregated != null}" class="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+            <div class="px-5 py-3 border-b border-gray-700 flex justify-between items-center">
+                <h2 class="font-semibold text-gray-100">
+                    Season <span class="text-gray-400 text-sm" th:text="${latestSeasonId}"></span> — All Modes
+                </h2>
+                <a th:href="@{/players/{id}/charts/season(id=${player.accountId})}"
+                   class="text-xs px-3 py-1.5 bg-violet-700 hover:bg-violet-600 text-white rounded transition-colors">
+                    View Charts →
+                </a>
+            </div>
+            <table class="w-full text-sm">
+                <tbody class="divide-y divide-gray-700/40">
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-5 py-2 text-gray-400">Total Kills</td>
+                    <td class="px-5 py-2 text-gray-100 font-medium text-right" th:text="${playerSeasonAggregated.totalKills}"></td>
+                </tr>
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-5 py-2 text-gray-400">Total Damage</td>
+                    <td class="px-5 py-2 text-gray-100 font-medium text-right" th:text="${#numbers.formatDecimal(playerSeasonAggregated.totalDamage, 1, 0)}"></td>
+                </tr>
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-5 py-2 text-gray-400">Total Wins</td>
+                    <td class="px-5 py-2 text-gray-100 font-medium text-right" th:text="${playerSeasonAggregated.totalWins}"></td>
+                </tr>
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-5 py-2 text-gray-400">Rounds Played</td>
+                    <td class="px-5 py-2 text-gray-100 font-medium text-right" th:text="${playerSeasonAggregated.totalRoundsPlayed}"></td>
+                </tr>
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-5 py-2 text-gray-400">Top 10s</td>
+                    <td class="px-5 py-2 text-gray-100 font-medium text-right" th:text="${playerSeasonAggregated.totalTop10s}"></td>
+                </tr>
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-5 py-2 text-gray-400">Headshot Kills</td>
+                    <td class="px-5 py-2 text-gray-100 font-medium text-right" th:text="${playerSeasonAggregated.totalHeadshotKills}"></td>
+                </tr>
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-5 py-2 text-gray-400">Time Survived</td>
+                    <td class="px-5 py-2 text-gray-100 font-medium text-right" th:text="${#numbers.formatDecimal(playerSeasonAggregated.totalTimeSurvived / 3600, 1, 1)} + 'h'"></td>
+                </tr>
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-5 py-2 text-gray-400">Dmg / Round</td>
+                    <td class="px-5 py-2 text-gray-100 font-medium text-right" th:text="${#numbers.formatDecimal(playerSeasonAggregated.dmgPerRound, 1, 1)}"></td>
+                </tr>
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-5 py-2 text-gray-400">K/D</td>
+                    <td class="px-5 py-2 text-gray-100 font-medium text-right" th:text="${#numbers.formatDecimal(playerSeasonAggregated.kd, 1, 2)}"></td>
                 </tr>
                 </tbody>
             </table>
         </div>
     </div>
 
-    <div th:if="${latestStats != null}">
-        <h3>Lifetime Stats by Game Mode</h3>
-        <div class="table-responsive mb-4">
-            <table class="table table-sm table-striped">
-                <thead>
+    <!-- Lifetime Stats by Game Mode -->
+    <div th:if="${latestStats != null}" class="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+        <div class="px-5 py-3 border-b border-gray-700">
+            <h2 class="font-semibold text-gray-100">Lifetime Stats by Game Mode</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm whitespace-nowrap">
+                <thead class="bg-gray-700 text-gray-300 text-xs uppercase tracking-wider">
                 <tr>
-                    <th>Stat</th>
-                    <th>Solo</th>
-                    <th>Solo FPP</th>
-                    <th>Duo</th>
-                    <th>Duo FPP</th>
-                    <th>Squad</th>
-                    <th>Squad FPP</th>
+                    <th class="px-4 py-2 text-left font-semibold">Stat</th>
+                    <th class="px-4 py-2 text-right font-semibold">Solo</th>
+                    <th class="px-4 py-2 text-right font-semibold">Solo FPP</th>
+                    <th class="px-4 py-2 text-right font-semibold">Duo</th>
+                    <th class="px-4 py-2 text-right font-semibold">Duo FPP</th>
+                    <th class="px-4 py-2 text-right font-semibold">Squad</th>
+                    <th class="px-4 py-2 text-right font-semibold">Squad FPP</th>
                 </tr>
                 </thead>
-                <tbody>
-                <tr>
-                    <td>Rounds Played</td>
-                    <td th:text="${latestStats.stats.gameModeStats.solo?.roundsPlayed ?: 0}">0</td>
-                    <td th:text="${latestStats.stats.gameModeStats.soloFpp?.roundsPlayed ?: 0}">0</td>
-                    <td th:text="${latestStats.stats.gameModeStats.duo?.roundsPlayed ?: 0}">0</td>
-                    <td th:text="${latestStats.stats.gameModeStats.duoFpp?.roundsPlayed ?: 0}">0</td>
-                    <td th:text="${latestStats.stats.gameModeStats.squad?.roundsPlayed ?: 0}">0</td>
-                    <td th:text="${latestStats.stats.gameModeStats.squadFpp?.roundsPlayed ?: 0}">0</td>
+                <tbody class="divide-y divide-gray-700/40">
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-4 py-2 text-gray-400 font-medium">Rounds Played</td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${lifetimeGameModeStatsView?.solo?.roundsPlayed ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${lifetimeGameModeStatsView?.soloFpp?.roundsPlayed ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${lifetimeGameModeStatsView?.duo?.roundsPlayed ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${lifetimeGameModeStatsView?.duoFpp?.roundsPlayed ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${lifetimeGameModeStatsView?.squad?.roundsPlayed ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${lifetimeGameModeStatsView?.squadFpp?.roundsPlayed ?: 0}"></td>
                 </tr>
-                <tr>
-                    <td>Kills</td>
-                    <td th:text="${latestStats.stats.gameModeStats.solo?.kills ?: 0}">0</td>
-                    <td th:text="${latestStats.stats.gameModeStats.soloFpp?.kills ?: 0}">0</td>
-                    <td th:text="${latestStats.stats.gameModeStats.duo?.kills ?: 0}">0</td>
-                    <td th:text="${latestStats.stats.gameModeStats.duoFpp?.kills ?: 0}">0</td>
-                    <td th:text="${latestStats.stats.gameModeStats.squad?.kills ?: 0}">0</td>
-                    <td th:text="${latestStats.stats.gameModeStats.squadFpp?.kills ?: 0}">0</td>
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-4 py-2 text-gray-400 font-medium">Kills</td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${lifetimeGameModeStatsView?.solo?.kills ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${lifetimeGameModeStatsView?.soloFpp?.kills ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${lifetimeGameModeStatsView?.duo?.kills ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${lifetimeGameModeStatsView?.duoFpp?.kills ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${lifetimeGameModeStatsView?.squad?.kills ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${lifetimeGameModeStatsView?.squadFpp?.kills ?: 0}"></td>
                 </tr>
-                <tr>
-                    <td>Wins</td>
-                    <td th:text="${latestStats.stats.gameModeStats.solo?.wins ?: 0}">0</td>
-                    <td th:text="${latestStats.stats.gameModeStats.soloFpp?.wins ?: 0}">0</td>
-                    <td th:text="${latestStats.stats.gameModeStats.duo?.wins ?: 0}">0</td>
-                    <td th:text="${latestStats.stats.gameModeStats.duoFpp?.wins ?: 0}">0</td>
-                    <td th:text="${latestStats.stats.gameModeStats.squad?.wins ?: 0}">0</td>
-                    <td th:text="${latestStats.stats.gameModeStats.squadFpp?.wins ?: 0}">0</td>
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-4 py-2 text-gray-400 font-medium">Wins</td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${lifetimeGameModeStatsView?.solo?.wins ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${lifetimeGameModeStatsView?.soloFpp?.wins ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${lifetimeGameModeStatsView?.duo?.wins ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${lifetimeGameModeStatsView?.duoFpp?.wins ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${lifetimeGameModeStatsView?.squad?.wins ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${lifetimeGameModeStatsView?.squadFpp?.wins ?: 0}"></td>
                 </tr>
-                <tr>
-                    <td>Damage Dealt</td>
-                    <td th:text="${#numbers.formatDecimal((latestStats.stats.gameModeStats.solo?.damageDealt ?: 0), 1, 0)}">
-                        0
-                    </td>
-                    <td th:text="${#numbers.formatDecimal((latestStats.stats.gameModeStats.soloFpp?.damageDealt ?: 0), 1, 0)}">
-                        0
-                    </td>
-                    <td th:text="${#numbers.formatDecimal((latestStats.stats.gameModeStats.duo?.damageDealt ?: 0), 1, 0)}">
-                        0
-                    </td>
-                    <td th:text="${#numbers.formatDecimal((latestStats.stats.gameModeStats.duoFpp?.damageDealt ?: 0), 1, 0)}">
-                        0
-                    </td>
-                    <td th:text="${#numbers.formatDecimal((latestStats.stats.gameModeStats.squad?.damageDealt ?: 0), 1, 0)}">
-                        0
-                    </td>
-                    <td th:text="${#numbers.formatDecimal((latestStats.stats.gameModeStats.squadFpp?.damageDealt ?: 0), 1, 0)}">
-                        0
-                    </td>
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-4 py-2 text-gray-400 font-medium">Damage Dealt</td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(lifetimeGameModeStatsView?.solo?.damageDealt ?: 0, 1, 0)}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(lifetimeGameModeStatsView?.soloFpp?.damageDealt ?: 0, 1, 0)}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(lifetimeGameModeStatsView?.duo?.damageDealt ?: 0, 1, 0)}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(lifetimeGameModeStatsView?.duoFpp?.damageDealt ?: 0, 1, 0)}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(lifetimeGameModeStatsView?.squad?.damageDealt ?: 0, 1, 0)}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(lifetimeGameModeStatsView?.squadFpp?.damageDealt ?: 0, 1, 0)}"></td>
                 </tr>
-                <tr>
-                    <td>Top 10s</td>
-                    <td th:text="${latestStats.stats.gameModeStats.solo?.top10s ?: 0}">0</td>
-                    <td th:text="${latestStats.stats.gameModeStats.soloFpp?.top10s ?: 0}">0</td>
-                    <td th:text="${latestStats.stats.gameModeStats.duo?.top10s ?: 0}">0</td>
-                    <td th:text="${latestStats.stats.gameModeStats.duoFpp?.top10s ?: 0}">0</td>
-                    <td th:text="${latestStats.stats.gameModeStats.squad?.top10s ?: 0}">0</td>
-                    <td th:text="${latestStats.stats.gameModeStats.squadFpp?.top10s ?: 0}">0</td>
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-4 py-2 text-gray-400 font-medium">Top 10s</td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${lifetimeGameModeStatsView?.solo?.top10s ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${lifetimeGameModeStatsView?.soloFpp?.top10s ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${lifetimeGameModeStatsView?.duo?.top10s ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${lifetimeGameModeStatsView?.duoFpp?.top10s ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${lifetimeGameModeStatsView?.squad?.top10s ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${lifetimeGameModeStatsView?.squadFpp?.top10s ?: 0}"></td>
                 </tr>
-                <tr>
-                    <td>K/D</td>
-                    <td th:text="${(latestStats.stats.gameModeStats.solo?.roundsPlayed ?: 0) > 0 ? T(java.lang.String).format('%.2f', ((latestStats.stats.gameModeStats.solo?.kills ?: 0) * 1.0 / latestStats.stats.gameModeStats.solo?.roundsPlayed)) : '0.00'}">
-                        0.00
-                    </td>
-                    <td th:text="${(latestStats.stats.gameModeStats.soloFpp?.roundsPlayed ?: 0) > 0 ? T(java.lang.String).format('%.2f', ((latestStats.stats.gameModeStats.soloFpp?.kills ?: 0) * 1.0 / latestStats.stats.gameModeStats.soloFpp?.roundsPlayed)) : '0.00'}">
-                        0.00
-                    </td>
-                    <td th:text="${(latestStats.stats.gameModeStats.duo?.roundsPlayed ?: 0) > 0 ? T(java.lang.String).format('%.2f', ((latestStats.stats.gameModeStats.duo?.kills ?: 0) * 1.0 / latestStats.stats.gameModeStats.duo?.roundsPlayed)) : '0.00'}">
-                        0.00
-                    </td>
-                    <td th:text="${(latestStats.stats.gameModeStats.duoFpp?.roundsPlayed ?: 0) > 0 ? T(java.lang.String).format('%.2f', ((latestStats.stats.gameModeStats.duoFpp?.kills ?: 0) * 1.0 / latestStats.stats.gameModeStats.duoFpp?.roundsPlayed)) : '0.00'}">
-                        0.00
-                    </td>
-                    <td th:text="${(latestStats.stats.gameModeStats.squad?.roundsPlayed ?: 0) > 0 ? T(java.lang.String).format('%.2f', ((latestStats.stats.gameModeStats.squad?.kills ?: 0) * 1.0 / latestStats.stats.gameModeStats.squad?.roundsPlayed)) : '0.00'}">
-                        0.00
-                    </td>
-                    <td th:text="${(latestStats.stats.gameModeStats.squadFpp?.roundsPlayed ?: 0) > 0 ? T(java.lang.String).format('%.2f', ((latestStats.stats.gameModeStats.squadFpp?.kills ?: 0) * 1.0 / latestStats.stats.gameModeStats.squadFpp?.roundsPlayed)) : '0.00'}">
-                        0.00
-                    </td>
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-4 py-2 text-gray-400 font-medium">K/D</td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(lifetimeGameModeStatsView?.solo?.kd ?: 0, 1, 2)}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(lifetimeGameModeStatsView?.soloFpp?.kd ?: 0, 1, 2)}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(lifetimeGameModeStatsView?.duo?.kd ?: 0, 1, 2)}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(lifetimeGameModeStatsView?.duoFpp?.kd ?: 0, 1, 2)}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(lifetimeGameModeStatsView?.squad?.kd ?: 0, 1, 2)}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(lifetimeGameModeStatsView?.squadFpp?.kd ?: 0, 1, 2)}"></td>
+                </tr>
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-4 py-2 text-gray-400 font-medium">Dmg / Round</td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(lifetimeGameModeStatsView?.solo?.dmgPerRound ?: 0, 1, 1)}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(lifetimeGameModeStatsView?.soloFpp?.dmgPerRound ?: 0, 1, 1)}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(lifetimeGameModeStatsView?.duo?.dmgPerRound ?: 0, 1, 1)}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(lifetimeGameModeStatsView?.duoFpp?.dmgPerRound ?: 0, 1, 1)}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(lifetimeGameModeStatsView?.squad?.dmgPerRound ?: 0, 1, 1)}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(lifetimeGameModeStatsView?.squadFpp?.dmgPerRound ?: 0, 1, 1)}"></td>
                 </tr>
                 </tbody>
             </table>
         </div>
     </div>
 
-    <!-- Per-Match Skill Level Charts -->
-    <div th:if="${!#lists.isEmpty(perMatchStats)}">
-        <h3>Skill Level Across Recent Matches</h3>
-        <p class="text-muted"><small>Each point is one match. Range = all participants. <strong style="color: #e6550d;">Orange
-            line = player's snapshot at time of match was downloaded.</strong></small></p>
-        <div class="row mb-4">
-            <div class="col-md-10">
-                <canvas id="matchKillsChart"></canvas>
-            </div>
+    <!-- Season Stats by Game Mode -->
+    <div th:if="${latestSeasonStats != null}" class="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+        <div class="px-5 py-3 border-b border-gray-700">
+            <h2 class="font-semibold text-gray-100">
+                Season Stats by Game Mode
+                <span class="text-gray-400 text-sm font-normal ml-2" th:text="${latestSeasonId}"></span>
+            </h2>
         </div>
-        <div class="row mb-4">
-            <div class="col-md-10">
-                <canvas id="matchDamageChart"></canvas>
-            </div>
-        </div>
-        <div class="row mb-4">
-            <div class="col-md-10">
-                <canvas id="matchDmgPerRoundLifetimeChart"></canvas>
-            </div>
-        </div>
-        <div class="row mb-4">
-            <div class="col-md-10">
-                <canvas id="matchDmgPerRoundModeChart"></canvas>
-            </div>
-        </div>
-        <div class="row mb-4">
-            <div class="col-md-10">
-                <canvas id="matchDmgPerMinuteLifetimeChart"></canvas>
-            </div>
-        </div>
-        <div class="row mb-4">
-            <div class="col-md-10">
-                <canvas id="matchDmgPerMinuteModeChart"></canvas>
-            </div>
-        </div>
-        <div class="row mb-4">
-            <div class="col-md-10">
-                <canvas id="matchKDChart"></canvas>
-            </div>
-        </div>
-        <div class="row mb-4">
-            <div class="col-md-10">
-                <canvas id="matchTimeSurvivedChart"></canvas>
-            </div>
-        </div>
-        <div class="row mb-4">
-            <div class="col-md-10">
-                <canvas id="matchWinsChart"></canvas>
-            </div>
-        </div>
-        <div class="row mb-4">
-            <div class="col-md-10">
-                <canvas id="matchRoundsChart"></canvas>
-            </div>
-        </div>
-        <div class="row mb-4">
-            <div class="col-md-10">
-                <canvas id="matchHSKillsChart"></canvas>
-            </div>
-        </div>
-        <div class="row mb-4">
-            <div class="col-md-10">
-                <canvas id="matchTop10sChart"></canvas>
-            </div>
-        </div>
-        <div class="row mb-4">
-            <div class="col-md-10">
-                <canvas id="matchBestRankChart"></canvas>
-            </div>
-        </div>
-        <div class="row mb-4">
-            <div class="col-md-10">
-                <canvas id="matchRankedCountChart"></canvas>
-            </div>
-        </div>
-        <div class="row mb-4">
-            <div class="col-md-10">
-                <canvas id="matchParticipantsChart"></canvas>
-            </div>
-        </div>
-        <div class="row mb-4">
-            <div class="col-md-10">
-                <canvas id="matchBotsChart"></canvas>
-            </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm whitespace-nowrap">
+                <thead class="bg-gray-700 text-gray-300 text-xs uppercase tracking-wider">
+                <tr>
+                    <th class="px-4 py-2 text-left font-semibold">Stat</th>
+                    <th class="px-4 py-2 text-right font-semibold">Solo</th>
+                    <th class="px-4 py-2 text-right font-semibold">Solo FPP</th>
+                    <th class="px-4 py-2 text-right font-semibold">Duo</th>
+                    <th class="px-4 py-2 text-right font-semibold">Duo FPP</th>
+                    <th class="px-4 py-2 text-right font-semibold">Squad</th>
+                    <th class="px-4 py-2 text-right font-semibold">Squad FPP</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-700/40">
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-4 py-2 text-gray-400 font-medium">Rounds Played</td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${seasonGameModeStatsView?.solo?.roundsPlayed ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${seasonGameModeStatsView?.soloFpp?.roundsPlayed ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${seasonGameModeStatsView?.duo?.roundsPlayed ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${seasonGameModeStatsView?.duoFpp?.roundsPlayed ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${seasonGameModeStatsView?.squad?.roundsPlayed ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${seasonGameModeStatsView?.squadFpp?.roundsPlayed ?: 0}"></td>
+                </tr>
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-4 py-2 text-gray-400 font-medium">Kills</td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${seasonGameModeStatsView?.solo?.kills ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${seasonGameModeStatsView?.soloFpp?.kills ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${seasonGameModeStatsView?.duo?.kills ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${seasonGameModeStatsView?.duoFpp?.kills ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${seasonGameModeStatsView?.squad?.kills ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${seasonGameModeStatsView?.squadFpp?.kills ?: 0}"></td>
+                </tr>
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-4 py-2 text-gray-400 font-medium">Wins</td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${seasonGameModeStatsView?.solo?.wins ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${seasonGameModeStatsView?.soloFpp?.wins ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${seasonGameModeStatsView?.duo?.wins ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${seasonGameModeStatsView?.duoFpp?.wins ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${seasonGameModeStatsView?.squad?.wins ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${seasonGameModeStatsView?.squadFpp?.wins ?: 0}"></td>
+                </tr>
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-4 py-2 text-gray-400 font-medium">Damage Dealt</td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(seasonGameModeStatsView?.solo?.damageDealt ?: 0, 1, 0)}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(seasonGameModeStatsView?.soloFpp?.damageDealt ?: 0, 1, 0)}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(seasonGameModeStatsView?.duo?.damageDealt ?: 0, 1, 0)}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(seasonGameModeStatsView?.duoFpp?.damageDealt ?: 0, 1, 0)}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(seasonGameModeStatsView?.squad?.damageDealt ?: 0, 1, 0)}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(seasonGameModeStatsView?.squadFpp?.damageDealt ?: 0, 1, 0)}"></td>
+                </tr>
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-4 py-2 text-gray-400 font-medium">Top 10s</td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${seasonGameModeStatsView?.solo?.top10s ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${seasonGameModeStatsView?.soloFpp?.top10s ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${seasonGameModeStatsView?.duo?.top10s ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${seasonGameModeStatsView?.duoFpp?.top10s ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${seasonGameModeStatsView?.squad?.top10s ?: 0}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${seasonGameModeStatsView?.squadFpp?.top10s ?: 0}"></td>
+                </tr>
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-4 py-2 text-gray-400 font-medium">K/D</td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(seasonGameModeStatsView?.solo?.kd ?: 0, 1, 2)}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(seasonGameModeStatsView?.soloFpp?.kd ?: 0, 1, 2)}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(seasonGameModeStatsView?.duo?.kd ?: 0, 1, 2)}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(seasonGameModeStatsView?.duoFpp?.kd ?: 0, 1, 2)}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(seasonGameModeStatsView?.squad?.kd ?: 0, 1, 2)}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(seasonGameModeStatsView?.squadFpp?.kd ?: 0, 1, 2)}"></td>
+                </tr>
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="px-4 py-2 text-gray-400 font-medium">Dmg / Round</td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(seasonGameModeStatsView?.solo?.dmgPerRound ?: 0, 1, 1)}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(seasonGameModeStatsView?.soloFpp?.dmgPerRound ?: 0, 1, 1)}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(seasonGameModeStatsView?.duo?.dmgPerRound ?: 0, 1, 1)}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(seasonGameModeStatsView?.duoFpp?.dmgPerRound ?: 0, 1, 1)}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(seasonGameModeStatsView?.squad?.dmgPerRound ?: 0, 1, 1)}"></td>
+                    <td class="px-4 py-2 text-gray-200 text-right" th:text="${#numbers.formatDecimal(seasonGameModeStatsView?.squadFpp?.dmgPerRound ?: 0, 1, 1)}"></td>
+                </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
     <!-- Matches List -->
-    <h3>Matches</h3>
-    <div th:if="${#lists.isEmpty(matches)}" class="alert alert-info">No matches loaded yet.</div>
-    <div class="table-responsive" th:if="${!#lists.isEmpty(matches)}">
-        <table class="table table-sm table-striped">
-            <thead>
-            <tr>
-                <th>Date</th>
-                <th>Place taken</th>
-                <th>Mode</th>
-                <th>Map</th>
-                <th>Duration</th>
-                <th>Participants (with stats)</th>
-                <th>Bots</th>
-                <th></th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="match : ${matches}">
-                <td><small th:text="${match.createdAt}"></small></td>
-                <td th:text="${match.placeTaken}"></td>
-                <td th:text="${match.gameMode}"></td>
-                <td th:text="${match.mapName}"></td>
-                <td th:text="${match.duration + 's'}"></td>
-                <td th:text="${match.playerCount}"></td>
-                <td th:text="${match.botCount}"></td>
-                <td>
-                    <a th:href="@{/players/{aid}/matches/{mid}(aid=${player.accountId},mid=${match.matchId})}"
-                       class="btn btn-sm btn-outline-primary">View</a>
-                </td>
-            </tr>
-            </tbody>
-        </table>
+    <div class="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+        <div class="px-5 py-3 border-b border-gray-700">
+            <h2 class="font-semibold text-gray-100">Matches</h2>
+        </div>
+        <div th:if="${#lists.isEmpty(matches)}" class="px-5 py-4 text-gray-500 text-sm">No matches loaded yet.</div>
+        <div th:if="${!#lists.isEmpty(matches)}" class="overflow-auto max-h-[500px]">
+            <table class="min-w-full text-sm whitespace-nowrap">
+                <thead class="sticky top-0 z-10 bg-gray-700 text-gray-300 text-xs uppercase tracking-wider">
+                <tr>
+                    <th class="px-4 py-2 text-left font-semibold">Date</th>
+                    <th class="px-4 py-2 text-left font-semibold">Place</th>
+                    <th class="px-4 py-2 text-left font-semibold">Mode</th>
+                    <th class="px-4 py-2 text-left font-semibold">Map</th>
+                    <th class="px-4 py-2 text-left font-semibold">Duration</th>
+                    <th class="px-4 py-2 text-left font-semibold">Players</th>
+                    <th class="px-4 py-2 text-left font-semibold">Bots</th>
+                    <th class="px-4 py-2 text-left font-semibold"></th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-700/40">
+                <tr th:each="match : ${matches}" class="bg-gray-800/40 hover:bg-gray-700/40 transition-colors">
+                    <td class="px-4 py-2 text-gray-400 text-xs" th:text="${match.createdAt}"></td>
+                    <td class="px-4 py-2 text-gray-200 font-medium" th:text="${match.placeTaken}"></td>
+                    <td class="px-4 py-2 text-gray-300" th:text="${match.gameMode}"></td>
+                    <td class="px-4 py-2 text-gray-300" th:text="${match.mapName}"></td>
+                    <td class="px-4 py-2 text-gray-300" th:text="${match.duration + 's'}"></td>
+                    <td class="px-4 py-2 text-gray-300" th:text="${match.playerCount}"></td>
+                    <td class="px-4 py-2 text-gray-400" th:text="${match.botCount}"></td>
+                    <td class="px-4 py-2">
+                        <a th:href="@{/players/{aid}/matches/{mid}(aid=${player.accountId},mid=${match.matchId})}"
+                           class="px-2 py-1 bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs rounded transition-colors">
+                            View
+                        </a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
-</div>
-
-<script th:if="${!#lists.isEmpty(perMatchStats)}" th:inline="javascript">
-    const labels = /*[[${perMatchStats.![label]}]]*/ [];
-
-    const minKills = /*[[${perMatchStats.![minKills]}]]*/ [];
-    const maxKills = /*[[${perMatchStats.![maxKills]}]]*/ [];
-    const medianKills = /*[[${perMatchStats.![medianKills]}]]*/ [];
-    const avgKills = /*[[${perMatchStats.![avgKills]}]]*/ [];
-
-    const minDamage = /*[[${perMatchStats.![minDamage]}]]*/ [];
-    const maxDamage = /*[[${perMatchStats.![maxDamage]}]]*/ [];
-    const medianDamage = /*[[${perMatchStats.![medianDamage]}]]*/ [];
-    const avgDamage = /*[[${perMatchStats.![avgDamage]}]]*/ [];
-
-    const minDmgPerRoundLifetime = /*[[${perMatchStats.![minDmgPerRoundLifetime]}]]*/ [];
-    const maxDmgPerRoundLifetime = /*[[${perMatchStats.![maxDmgPerRoundLifetime]}]]*/ [];
-    const medianDmgPerRoundLifetime = /*[[${perMatchStats.![medianDmgPerRoundLifetime]}]]*/ [];
-    const avgDmgPerRoundLifetime = /*[[${perMatchStats.![avgDmgPerRoundLifetime]}]]*/ [];
-
-    const minDmgPerRoundMode = /*[[${perMatchStats.![minDmgPerRoundMode]}]]*/ [];
-    const maxDmgPerRoundMode = /*[[${perMatchStats.![maxDmgPerRoundMode]}]]*/ [];
-    const medianDmgPerRoundMode = /*[[${perMatchStats.![medianDmgPerRoundMode]}]]*/ [];
-    const avgDmgPerRoundMode = /*[[${perMatchStats.![avgDmgPerRoundMode]}]]*/ [];
-
-    const minDmgPerMinuteLifetime = /*[[${perMatchStats.![minDmgPerMinuteLifetime]}]]*/ [];
-    const maxDmgPerMinuteLifetime = /*[[${perMatchStats.![maxDmgPerMinuteLifetime]}]]*/ [];
-    const medianDmgPerMinuteLifetime = /*[[${perMatchStats.![medianDmgPerMinuteLifetime]}]]*/ [];
-    const avgDmgPerMinuteLifetime = /*[[${perMatchStats.![avgDmgPerMinuteLifetime]}]]*/ [];
-
-    const minDmgPerMinuteMode = /*[[${perMatchStats.![minDmgPerMinuteMode]}]]*/ [];
-    const maxDmgPerMinuteMode = /*[[${perMatchStats.![maxDmgPerMinuteMode]}]]*/ [];
-    const medianDmgPerMinuteMode = /*[[${perMatchStats.![medianDmgPerMinuteMode]}]]*/ [];
-    const avgDmgPerMinuteMode = /*[[${perMatchStats.![avgDmgPerMinuteMode]}]]*/ [];
-
-    const minKD = /*[[${perMatchStats.![minKD]}]]*/ [];
-    const maxKD = /*[[${perMatchStats.![maxKD]}]]*/ [];
-    const medianKD = /*[[${perMatchStats.![medianKD]}]]*/ [];
-    const avgKD = /*[[${perMatchStats.![avgKD]}]]*/ [];
-
-    const participantCounts = /*[[${perMatchStats.![participantCount]}]]*/ [];
-    const botCounts = /*[[${perMatchStats.![botCount]}]]*/ [];
-
-    const minBRP = /*[[${perMatchStats.![minBestRankPoint]}]]*/ [];
-    const maxBRP = /*[[${perMatchStats.![maxBestRankPoint]}]]*/ [];
-    const medianBRP = /*[[${perMatchStats.![medianBestRankPoint]}]]*/ [];
-    const avgBRP = /*[[${perMatchStats.![avgBestRankPoint]}]]*/ [];
-
-    const rankedCounts = /*[[${perMatchStats.![rankedPlayerCount]}]]*/ [];
-
-    // todo instead of using snapshot
-    const playerKills = /*[[${perMatchStats.![playerSnapshotKills]}]]*/ [];
-    const playerDamage = /*[[${perMatchStats.![playerSnapshotDamage]}]]*/ [];
-    const playerKD = /*[[${perMatchStats.![playerSnapshotKD]}]]*/ [];
-    const playerBRP = /*[[${perMatchStats.![playerSnapshotBestRankPoint]}]]*/ [];
-    const playerDmgPerRoundLifetime = /*[[${perMatchStats.![playerSnapshotDmgPerRoundLifetime]}]]*/ [];
-    const playerDmgPerRoundMode = /*[[${perMatchStats.![playerSnapshotDmgPerRoundMode]}]]*/ [];
-    const playerDmgPerMinuteLifetime = /*[[${perMatchStats.![playerSnapshotDmgPerMinuteLifetime]}]]*/ [];
-    const playerDmgPerMinuteMode = /*[[${perMatchStats.![playerSnapshotDmgPerMinuteMode]}]]*/ [];
-
-    const rangeStyle = (color) => ({
-        borderColor: color,
-        backgroundColor: color.replace('1)', '0.15)'),
-        fill: '+1',
-        tension: 0.2,
-        borderWidth: 1,
-        pointRadius: 2
-    });
-    const solidStyle = (color) => ({borderColor: color, fill: false, tension: 0.2, borderWidth: 2});
-    const dashStyle = (color) => ({borderColor: color, fill: false, tension: 0.2, borderWidth: 2, borderDash: [5, 5]});
-    const playerStyle = {
-        borderColor: 'rgba(230,85,13,1)',
-        fill: false,
-        tension: 0.2,
-        borderWidth: 3,
-        pointRadius: 4,
-        pointBackgroundColor: 'rgba(230,85,13,1)'
-    };
-
-    const matchKillsChart = new Chart(document.getElementById('matchKillsChart'), {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [
-                {label: 'Min', data: minKills, ...rangeStyle('rgba(54,162,235,1)')},
-                {label: 'Max', data: maxKills, ...rangeStyle('rgba(54,162,235,1)'), fill: false},
-                {label: 'Median', data: medianKills, ...solidStyle('rgba(54,162,235,1)')},
-                {label: 'Avg', data: avgKills, ...dashStyle('rgba(255,99,132,1)')},
-                {label: 'Player (snapshot)', data: playerKills, ...playerStyle}
-            ]
-        },
-        options: {responsive: true, plugins: {title: {display: true, text: 'Participant Lifetime Kills (all modes)'}}}
-    });
-    matchKillsChart.getDatasetMeta(0).hidden = true;
-    matchKillsChart.getDatasetMeta(1).hidden = true;
-    matchKillsChart.update();
-
-    const matchDamageChart = new Chart(document.getElementById('matchDamageChart'), {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [
-                {label: 'Min', data: minDamage, ...rangeStyle('rgba(75,192,192,1)')},
-                {label: 'Max', data: maxDamage, ...rangeStyle('rgba(75,192,192,1)'), fill: false},
-                {label: 'Median', data: medianDamage, ...solidStyle('rgba(75,192,192,1)')},
-                {label: 'Avg', data: avgDamage, ...dashStyle('rgba(255,159,64,1)')},
-                {label: 'Player (snapshot)', data: playerDamage, ...playerStyle}
-            ]
-        },
-        options: {responsive: true, plugins: {title: {display: true, text: 'Participant Lifetime Damage (all modes)'}}}
-    });
-    matchDamageChart.getDatasetMeta(0).hidden = true;
-    matchDamageChart.getDatasetMeta(1).hidden = true;
-    matchDamageChart.update();
-
-    const matchDmgPerRoundLifetimeChart = new Chart(document.getElementById('matchDmgPerRoundLifetimeChart'), {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [
-                {label: 'Min', data: minDmgPerRoundLifetime, ...rangeStyle('rgba(54,162,235,1)')},
-                {label: 'Max', data: maxDmgPerRoundLifetime, ...rangeStyle('rgba(54,162,235,1)'), fill: false},
-                {label: 'Median', data: medianDmgPerRoundLifetime, ...solidStyle('rgba(54,162,235,1)')},
-                {label: 'Avg', data: avgDmgPerRoundLifetime, ...dashStyle('rgba(255,159,64,1)')},
-                {label: 'Player (snapshot)', data: playerDmgPerRoundLifetime, ...playerStyle}
-            ]
-        },
-        options: {responsive: true, plugins: {title: {display: true, text: 'Damage per Round (lifetime)'}}}
-    });
-    matchDmgPerRoundLifetimeChart.getDatasetMeta(0).hidden = true;
-    matchDmgPerRoundLifetimeChart.getDatasetMeta(1).hidden = true;
-    matchDmgPerRoundLifetimeChart.update();
-
-    const matchDmgPerRoundModeChart = new Chart(document.getElementById('matchDmgPerRoundModeChart'), {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [
-                {label: 'Min', data: minDmgPerRoundMode, ...rangeStyle('rgba(153,102,255,1)')},
-                {label: 'Max', data: maxDmgPerRoundMode, ...rangeStyle('rgba(153,102,255,1)'), fill: false},
-                {label: 'Median', data: medianDmgPerRoundMode, ...solidStyle('rgba(153,102,255,1)')},
-                {label: 'Avg', data: avgDmgPerRoundMode, ...dashStyle('rgba(255,205,86,1)')},
-                {label: 'Player (snapshot)', data: playerDmgPerRoundMode, ...playerStyle}
-            ]
-        },
-        options: {responsive: true, plugins: {title: {display: true, text: 'Damage per Round (match mode)'}}}
-    });
-    matchDmgPerRoundModeChart.getDatasetMeta(0).hidden = true;
-    matchDmgPerRoundModeChart.getDatasetMeta(1).hidden = true;
-    matchDmgPerRoundModeChart.update();
-
-    const matchDmgPerMinuteLifetimeChart = new Chart(document.getElementById('matchDmgPerMinuteLifetimeChart'), {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [
-                {label: 'Min', data: minDmgPerMinuteLifetime, ...rangeStyle('rgba(75,192,192,1)')},
-                {label: 'Max', data: maxDmgPerMinuteLifetime, ...rangeStyle('rgba(75,192,192,1)'), fill: false},
-                {label: 'Median', data: medianDmgPerMinuteLifetime, ...solidStyle('rgba(75,192,192,1)')},
-                {label: 'Avg', data: avgDmgPerMinuteLifetime, ...dashStyle('rgba(255,99,132,1)')},
-                {label: 'Player (snapshot)', data: playerDmgPerMinuteLifetime, ...playerStyle}
-            ]
-        },
-        options: {responsive: true, plugins: {title: {display: true, text: 'Damage per Minute (lifetime)'}}}
-    });
-    matchDmgPerMinuteLifetimeChart.getDatasetMeta(0).hidden = true;
-    matchDmgPerMinuteLifetimeChart.getDatasetMeta(1).hidden = true;
-    matchDmgPerMinuteLifetimeChart.update();
-
-    const matchDmgPerMinuteModeChart = new Chart(document.getElementById('matchDmgPerMinuteModeChart'), {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [
-                {label: 'Min', data: minDmgPerMinuteMode, ...rangeStyle('rgba(255,99,132,1)')},
-                {label: 'Max', data: maxDmgPerMinuteMode, ...rangeStyle('rgba(255,99,132,1)'), fill: false},
-                {label: 'Median', data: medianDmgPerMinuteMode, ...solidStyle('rgba(255,99,132,1)')},
-                {label: 'Avg', data: avgDmgPerMinuteMode, ...dashStyle('rgba(54,162,235,1)')},
-                {label: 'Player (snapshot)', data: playerDmgPerMinuteMode, ...playerStyle}
-            ]
-        },
-        options: {responsive: true, plugins: {title: {display: true, text: 'Damage per Minute (match mode)'}}}
-    });
-    matchDmgPerMinuteModeChart.getDatasetMeta(0).hidden = true;
-    matchDmgPerMinuteModeChart.getDatasetMeta(1).hidden = true;
-    matchDmgPerMinuteModeChart.update();
-
-    const matchKDChart = new Chart(document.getElementById('matchKDChart'), {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [
-                {label: 'Min', data: minKD, ...rangeStyle('rgba(153,102,255,1)')},
-                {label: 'Max', data: maxKD, ...rangeStyle('rgba(153,102,255,1)'), fill: false},
-                {label: 'Median', data: medianKD, ...solidStyle('rgba(153,102,255,1)')},
-                {label: 'Avg', data: avgKD, ...dashStyle('rgba(255,205,86,1)')},
-                {label: 'Player (snapshot)', data: playerKD, ...playerStyle}
-            ]
-        },
-        options: {responsive: true, plugins: {title: {display: true, text: 'Participant K/D Ratio (match mode)'}}}
-    });
-    matchKDChart.getDatasetMeta(0).hidden = true;
-    matchKDChart.getDatasetMeta(1).hidden = true;
-    matchKDChart.update();
-
-    const matchTimeSurvivedChart = new Chart(document.getElementById('matchTimeSurvivedChart'), {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Min',
-                    data: /*[[${perMatchStats.![minTimeSurvived]}]]*/ [], ...rangeStyle('rgba(255,206,86,1)')
-                },
-                {
-                    label: 'Max',
-                    data: /*[[${perMatchStats.![maxTimeSurvived]}]]*/ [], ...rangeStyle('rgba(255,206,86,1)'),
-                    fill: false
-                },
-                {
-                    label: 'Median',
-                    data: /*[[${perMatchStats.![medianTimeSurvived]}]]*/ [], ...solidStyle('rgba(255,206,86,1)')
-                },
-                {
-                    label: 'Avg',
-                    data: /*[[${perMatchStats.![avgTimeSurvived]}]]*/ [], ...dashStyle('rgba(75,192,192,1)')
-                },
-                {
-                    label: 'Player (snapshot)',
-                    data: /*[[${perMatchStats.![playerSnapshotTimeSurvived]}]]*/ [], ...playerStyle
-                }
-            ]
-        },
-        options: {responsive: true, plugins: {title: {display: true, text: 'Participant Time Survived (match mode)'}}}
-    });
-    matchTimeSurvivedChart.getDatasetMeta(0).hidden = true;
-    matchTimeSurvivedChart.getDatasetMeta(1).hidden = true;
-    matchTimeSurvivedChart.update();
-
-    const matchWinsChart = new Chart(document.getElementById('matchWinsChart'), {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [
-                {label: 'Min', data: /*[[${perMatchStats.![minWins]}]]*/ [], ...rangeStyle('rgba(75,192,192,1)')},
-                {
-                    label: 'Max',
-                    data: /*[[${perMatchStats.![maxWins]}]]*/ [], ...rangeStyle('rgba(75,192,192,1)'),
-                    fill: false
-                },
-                {label: 'Median', data: /*[[${perMatchStats.![medianWins]}]]*/ [], ...solidStyle('rgba(75,192,192,1)')},
-                {label: 'Avg', data: /*[[${perMatchStats.![avgWins]}]]*/ [], ...dashStyle('rgba(255,159,64,1)')},
-                {label: 'Player (snapshot)', data: /*[[${perMatchStats.![playerSnapshotWins]}]]*/ [], ...playerStyle}
-            ]
-        },
-        options: {responsive: true, plugins: {title: {display: true, text: 'Participant Wins (match mode)'}}}
-    });
-    matchWinsChart.getDatasetMeta(0).hidden = true;
-    matchWinsChart.getDatasetMeta(1).hidden = true;
-    matchWinsChart.update();
-
-    const matchRoundsChart = new Chart(document.getElementById('matchRoundsChart'), {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Min',
-                    data: /*[[${perMatchStats.![minRoundsPlayed]}]]*/ [], ...rangeStyle('rgba(153,102,255,1)')
-                },
-                {
-                    label: 'Max',
-                    data: /*[[${perMatchStats.![maxRoundsPlayed]}]]*/ [], ...rangeStyle('rgba(153,102,255,1)'),
-                    fill: false
-                },
-                {
-                    label: 'Median',
-                    data: /*[[${perMatchStats.![medianRoundsPlayed]}]]*/ [], ...solidStyle('rgba(153,102,255,1)')
-                },
-                {
-                    label: 'Avg',
-                    data: /*[[${perMatchStats.![avgRoundsPlayed]}]]*/ [], ...dashStyle('rgba(255,205,86,1)')
-                },
-                {
-                    label: 'Player (snapshot)',
-                    data: /*[[${perMatchStats.![playerSnapshotRoundsPlayed]}]]*/ [], ...playerStyle
-                }
-            ]
-        },
-        options: {responsive: true, plugins: {title: {display: true, text: 'Participant Rounds Played (match mode)'}}}
-    });
-    matchRoundsChart.getDatasetMeta(0).hidden = true;
-    matchRoundsChart.getDatasetMeta(1).hidden = true;
-    matchRoundsChart.update();
-
-    const matchHSKillsChart = new Chart(document.getElementById('matchHSKillsChart'), {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Min',
-                    data: /*[[${perMatchStats.![minHeadshotKills]}]]*/ [], ...rangeStyle('rgba(255,99,132,1)')
-                },
-                {
-                    label: 'Max',
-                    data: /*[[${perMatchStats.![maxHeadshotKills]}]]*/ [], ...rangeStyle('rgba(255,99,132,1)'),
-                    fill: false
-                },
-                {
-                    label: 'Median',
-                    data: /*[[${perMatchStats.![medianHeadshotKills]}]]*/ [], ...solidStyle('rgba(255,99,132,1)')
-                },
-                {
-                    label: 'Avg',
-                    data: /*[[${perMatchStats.![avgHeadshotKills]}]]*/ [], ...dashStyle('rgba(54,162,235,1)')
-                },
-                {
-                    label: 'Player (snapshot)',
-                    data: /*[[${perMatchStats.![playerSnapshotHeadshotKills]}]]*/ [], ...playerStyle
-                }
-            ]
-        },
-        options: {responsive: true, plugins: {title: {display: true, text: 'Participant Headshot Kills (match mode)'}}}
-    });
-    matchHSKillsChart.getDatasetMeta(0).hidden = true;
-    matchHSKillsChart.getDatasetMeta(1).hidden = true;
-    matchHSKillsChart.update();
-
-    const matchTop10sChart = new Chart(document.getElementById('matchTop10sChart'), {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [
-                {label: 'Min', data: /*[[${perMatchStats.![minTop10s]}]]*/ [], ...rangeStyle('rgba(153,102,255,1)')},
-                {
-                    label: 'Max',
-                    data: /*[[${perMatchStats.![maxTop10s]}]]*/ [], ...rangeStyle('rgba(153,102,255,1)'),
-                    fill: false
-                },
-                {
-                    label: 'Median',
-                    data: /*[[${perMatchStats.![medianTop10s]}]]*/ [], ...solidStyle('rgba(153,102,255,1)')
-                },
-                {label: 'Avg', data: /*[[${perMatchStats.![avgTop10s]}]]*/ [], ...dashStyle('rgba(255,205,86,1)')},
-                {label: 'Player (snapshot)', data: /*[[${perMatchStats.![playerSnapshotTop10s]}]]*/ [], ...playerStyle}
-            ]
-        },
-        options: {responsive: true, plugins: {title: {display: true, text: 'Participant Top 10s (match mode)'}}}
-    });
-    matchTop10sChart.getDatasetMeta(0).hidden = true;
-    matchTop10sChart.getDatasetMeta(1).hidden = true;
-    matchTop10sChart.update();
-
-    const matchBestRankChart = new Chart(document.getElementById('matchBestRankChart'), {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [
-                {label: 'Min', data: minBRP, ...rangeStyle('rgba(0,128,128,1)')},
-                {label: 'Max', data: maxBRP, ...rangeStyle('rgba(0,128,128,1)'), fill: false},
-                {label: 'Median', data: medianBRP, ...solidStyle('rgba(0,128,128,1)')},
-                {label: 'Avg', data: avgBRP, ...dashStyle('rgba(255,140,0,1)')},
-                {label: 'Player (snapshot)', data: playerBRP, ...playerStyle}
-            ]
-        },
-        options: {responsive: true, plugins: {title: {display: true, text: 'Best Rank Point (non-zero only)'}}}
-    });
-    matchBestRankChart.getDatasetMeta(0).hidden = true;
-    matchBestRankChart.getDatasetMeta(1).hidden = true;
-    matchBestRankChart.update();
-
-    new Chart(document.getElementById('matchRankedCountChart'), {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{label: 'Ranked Players (BRP > 0)', data: rankedCounts, backgroundColor: 'rgba(0,128,128,0.5)'}]
-        },
-        options: {
-            responsive: true,
-            scales: {y: {ticks: {stepSize: 1}}},
-            plugins: {title: {display: true, text: 'Players with Non-Zero Best Rank Point'}}
-        }
-    });
-
-    new Chart(document.getElementById('matchParticipantsChart'), {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Participants with Stats',
-                data: participantCounts,
-                backgroundColor: 'rgba(54,162,235,0.5)'
-            }]
-        },
-        options: {
-            responsive: true,
-            scales: {y: {ticks: {stepSize: 1}}},
-            plugins: {title: {display: true, text: 'Participants with Lifetime Stats per Match'}}
-        }
-    });
-
-    new Chart(document.getElementById('matchBotsChart'), {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{label: 'Bots', data: botCounts, backgroundColor: 'rgba(255,99,132,0.5)'}]
-        },
-        options: {
-            responsive: true,
-            scales: {y: {ticks: {stepSize: 1}}},
-            plugins: {title: {display: true, text: 'Bots per Match'}}
-        }
-    });
-</script>
+</main>
 </body>
 </html>
 
