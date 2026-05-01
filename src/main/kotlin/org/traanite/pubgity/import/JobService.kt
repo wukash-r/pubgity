@@ -12,9 +12,32 @@ class JobService(
 ) {
     companion object {
         private val logger = LoggerFactory.getLogger(JobService::class.java)
+        private val ACTIVE_STATUSES = listOf(JobStatus.QUEUED, JobStatus.RUNNING)
     }
 
     fun getJobs(): List<ImportJob> = jobRepository.findAllByOrderByCreatedAtDesc()
+
+    fun findJobById(jobId: ObjectId): ImportJob? = jobRepository.findById(jobId).orElse(null)
+
+    /**
+     * Returns all jobs that belong to the given set of PUBG account IDs,
+     * ordered by creation time descending. Used to scope the jobs view for moderators.
+     */
+    fun getJobsForAccountIds(accountIds: Set<String>): List<ImportJob> =
+        jobRepository.findAllByAccountIdInOrderByCreatedAtDesc(accountIds)
+
+    /**
+     * Checks whether a moderator is allowed to queue another job given their constraints.
+     * Counts currently QUEUED or RUNNING jobs across the moderator's allowed players.
+     */
+    fun canModeratorQueue(allowedPlayerIds: Set<ObjectId>, maxQueueSize: Int): Boolean {
+        val accountIds = allowedPlayerIds
+            .mapNotNull { playerService.findById(it)?.accountId }
+            .toSet()
+        if (accountIds.isEmpty()) return false
+        val active = jobRepository.countByAccountIdInAndStatusIn(accountIds, ACTIVE_STATUSES)
+        return active < maxQueueSize
+    }
 
     fun queueJob(playerObjectId: ObjectId, matchCount: Int) {
         val player = playerService.findById(playerObjectId)
@@ -34,10 +57,7 @@ class JobService(
         )
         logger.info(
             "Queued update job {} for player '{}' (accountId={}, matchCount={})",
-            job.id,
-            player.playerName,
-            player.accountId,
-            clampedCount
+            job.id, player.playerName, player.accountId, clampedCount
         )
     }
 

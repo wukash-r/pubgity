@@ -6,36 +6,46 @@
             flex items-center gap-8">
 
     <!-- Left: Logo -->
-    <a href="/players" class="flex items-center gap-3 flex-shrink-0">
+    <a href="/" class="flex items-center gap-3 flex-shrink-0">
         <span class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-violet-600
                      flex items-center justify-center text-base font-bold text-white select-none">P</span>
         <span class="text-white font-semibold text-base tracking-tight">Pubgity</span>
     </a>
 
-    <!-- Nav links (left of center, right of logo) -->
+    <!-- Nav links -->
     <div class="flex items-center gap-1 flex-1">
-        <a href="/players"
+        <a href="/"
            class="px-4 py-2 text-gray-400 hover:text-white hover:bg-white/10 text-base font-medium rounded-lg transition-colors">
             Home
         </a>
-        <a th:if="${isAdmin}" href="/jobs"
+        <a href="/players"
+           class="px-4 py-2 text-gray-400 hover:text-white hover:bg-white/10 text-base font-medium rounded-lg transition-colors">
+            Players
+        </a>
+        <a th:if="${isAdmin or isModerator}" href="/jobs"
            class="px-4 py-2 text-gray-400 hover:text-white hover:bg-white/10 text-base font-medium rounded-lg transition-colors">
             Import
+        </a>
+        <a th:if="${isAdmin}" href="/admin/users"
+           class="px-4 py-2 text-gray-400 hover:text-white hover:bg-white/10 text-base font-medium rounded-lg transition-colors">
+            Admin
         </a>
     </div>
 
     <!-- Right: Auth -->
     <div class="flex items-center gap-3 flex-shrink-0">
-        <span th:if="${isAuthenticated}" th:text="${username}"
-              class="text-gray-500 text-sm hidden sm:inline"></span>
+        <a th:if="${isAuthenticated}" href="/profile"
+           class="text-gray-400 hover:text-white text-sm hidden sm:inline transition-colors"
+           th:text="${username}"></a>
         <form th:if="${isAuthenticated}" method="post" th:action="@{/logout}" class="inline">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
             <button type="submit"
                     class="px-4 py-2 text-sm text-gray-300 hover:text-white border border-white/15
                            hover:border-white/30 rounded-lg transition-colors cursor-pointer bg-transparent">
                 Sign out
             </button>
         </form>
-        <a th:unless="${isAuthenticated}" href="/login"
+        <a th:unless="${isAuthenticated}" href="/oauth2/authorization/oidc"
            class="px-4 py-2 text-sm text-white bg-white/10 hover:bg-white/15
                   border border-white/15 hover:border-white/25 rounded-lg transition-colors">
             Sign in
@@ -44,6 +54,4 @@
 </nav>
 </body>
 </html>
-
-
 

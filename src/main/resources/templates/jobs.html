@@ -18,8 +18,12 @@
 <main class="max-w-screen-2xl mx-auto px-4 py-8 space-y-8">
     <h1 class="text-3xl font-bold text-white">Pubgity Jobs</h1>
 
-    <!-- Add Player -->
-    <div class="bg-gray-800 border border-gray-700 rounded-lg p-5">
+    <!-- Flash error message -->
+    <div th:if="${error}" class="bg-red-900/50 border border-red-700 text-red-300 rounded-lg px-5 py-3 text-sm"
+         th:text="${error}"></div>
+
+    <!-- Add Player (ADMIN only) -->
+    <div th:if="${canManagePlayers}" class="bg-gray-800 border border-gray-700 rounded-lg p-5">
         <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Add Player to Watchlist</h2>
         <form method="post" th:action="@{/jobs/players/add}" class="flex gap-2">
             <input type="text" name="playerName" placeholder="Player name" required
@@ -280,8 +284,8 @@
                                         Update
                                     </button>
                                 </form>
-                                <form method="post" th:action="@{/jobs/players/{id}/remove(id=${player.id})}">
-                                    <button type="submit" onclick="return confirm('Remove this player?')"
+                                 <form method="post" th:action="@{/jobs/players/{id}/remove(id=${player.id})}">
+                                    <button th:if="${canManagePlayers}" type="submit" onclick="return confirm('Remove this player?')"
                                             class="px-2 py-1 bg-red-700 hover:bg-red-600 text-white text-xs rounded transition-colors whitespace-nowrap">
                                         Remove
                                     </button>

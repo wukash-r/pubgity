@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Pubgity - My Profile</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen">
+
+<div th:replace="~{fragments/nav :: nav}"></div>
+
+<main class="max-w-2xl mx-auto px-4 py-8 space-y-6">
+    <h1 class="text-3xl font-bold text-white">My Profile</h1>
+
+    <!-- Error / success messages -->
+    <div th:if="${param.error}" class="bg-red-900/50 border border-red-700 text-red-300 rounded-lg px-5 py-3 text-sm">
+        <span th:if="${param.error[0] == 'playerNotFound'}">Player not found. Make sure the name exactly matches a tracked player.</span>
+        <span th:if="${param.error[0] == 'invalidUsername'}">Username must not be blank.</span>
+        <span th:unless="${param.error[0] == 'playerNotFound' or param.error[0] == 'invalidUsername'}">An error occurred. Please try again.</span>
+    </div>
+
+    <!-- Account info -->
+    <div class="bg-gray-800 border border-gray-700 rounded-lg p-5 space-y-4">
+        <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider">Account</h2>
+
+        <div class="grid grid-cols-1 gap-1">
+            <label class="text-xs text-gray-500">Email (managed by your SSO provider)</label>
+            <span class="text-gray-300" th:text="${appUser.email}">email@example.com</span>
+        </div>
+
+        <div class="grid grid-cols-1 gap-1">
+            <label class="text-xs text-gray-500">Role</label>
+            <span class="inline-flex items-center gap-1.5">
+                <span class="px-2 py-0.5 rounded-full text-xs font-semibold"
+                      th:classappend="${appUser.role.name() == 'ADMIN'    ? 'bg-violet-700 text-white' :
+                                       (appUser.role.name() == 'MODERATOR' ? 'bg-blue-700 text-white' :
+                                                                              'bg-gray-700 text-gray-300')}"
+                      th:text="${appUser.role}">USER</span>
+            </span>
+        </div>
+    </div>
+
+    <!-- Change username -->
+    <div class="bg-gray-800 border border-gray-700 rounded-lg p-5 space-y-4">
+        <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider">Display Name</h2>
+        <form method="post" th:action="@{/profile/username}" class="flex gap-2">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <input type="text" name="username" th:value="${appUser.username}" required
+                   class="flex-1 bg-gray-700 border border-gray-600 text-gray-100 rounded px-3 py-2 text-sm
+                          focus:outline-none focus:border-blue-500 placeholder-gray-500">
+            <button type="submit"
+                    class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded transition-colors">
+                Save
+            </button>
+        </form>
+    </div>
+
+    <!-- Linked PUBG player -->
+    <div class="bg-gray-800 border border-gray-700 rounded-lg p-5 space-y-4">
+        <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider">Linked PUBG Player</h2>
+
+        <div th:if="${linkedPlayer != null}" class="flex items-center justify-between">
+            <div>
+                <span class="font-medium text-gray-100" th:text="${linkedPlayer.playerName}">PlayerName</span>
+                <span class="text-xs text-gray-500 ml-2" th:text="${linkedPlayer.accountId}"></span>
+            </div>
+            <div class="flex gap-2">
+                <a th:href="@{/players/{id}(id=${linkedPlayer.accountId})}"
+                   class="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs rounded transition-colors">
+                    View stats
+                </a>
+                <form method="post" th:action="@{/profile/unlink-player}">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <button type="submit" onclick="return confirm('Unlink player?')"
+                            class="px-3 py-1.5 bg-red-700 hover:bg-red-600 text-white text-xs rounded transition-colors">
+                        Unlink
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div th:unless="${linkedPlayer != null}">
+            <p class="text-gray-500 text-sm mb-3">No player linked yet. Enter the exact PUBG player name of a tracked player.</p>
+        </div>
+
+        <form method="post" th:action="@{/profile/link-player}" class="flex gap-2">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <input type="text" name="playerName"
+                   th:placeholder="${linkedPlayer != null ? 'Change player…' : 'Enter PUBG player name…'}"
+                   required
+                   class="flex-1 bg-gray-700 border border-gray-600 text-gray-100 rounded px-3 py-2 text-sm
+                          focus:outline-none focus:border-blue-500 placeholder-gray-500">
+            <button type="submit"
+                    class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded transition-colors">
+                <span th:text="${linkedPlayer != null ? 'Change' : 'Link'}">Link</span>
+            </button>
+        </form>
+        <p class="text-xs text-gray-600">Only players already tracked in Pubgity can be linked. Ask an admin to add the player first.</p>
+    </div>
+</main>
+</body>
+</html>
+
