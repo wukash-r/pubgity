@@ -50,6 +50,9 @@ class PlayerController(
     // todo replace with ObjectId
     @GetMapping("/{accountId}")
     fun playerDetail(@PathVariable accountId: String, model: Model): String {
+        if (accountId.isBlank()) {
+            return "players"
+        }
         populatePlayerModel(accountId, model)
         return "player-detail"
     }

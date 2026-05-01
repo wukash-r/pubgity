@@ -27,9 +27,8 @@
     <!-- No stats warning -->
     <div th:if="${latestStats == null}"
          class="bg-amber-950/40 border border-amber-700/50 text-amber-300 rounded-lg px-5 py-4 text-sm">
-        No lifetime stats available yet. Run an update job from the
-        <a sec:authorize="hasRole('ADMIN')" href="/jobs" class="underline hover:text-amber-200">jobs panel</a>
-        <span sec:authorize="!hasRole('ADMIN')">jobs panel</span>.
+        No lifetime stats available yet.
+        <a sec:authorize="hasRole('ADMIN')" href="/jobs" class="underline hover:text-amber-200"> Run an update job from the jobs panel</a>
     </div>
 
     <!-- Aggregated summary cards -->

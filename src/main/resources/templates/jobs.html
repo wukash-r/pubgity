@@ -39,10 +39,27 @@
                 <h2 class="font-semibold text-gray-100">Match Download Job Queue</h2>
                 <p class="text-xs text-gray-500 mt-0.5">Multiple jobs can exist for one match — if match exists in DB, job will fail on startup</p>
             </div>
-            <div class="flex items-center gap-4">
-                <input type="text" id="match-jobs-filter" placeholder="Filter…" oninput="filterTable(this,'match-jobs-table')"
+            <div class="flex flex-wrap items-center gap-4">
+                <input type="text" id="match-jobs-filter" placeholder="Filter…"
+                       oninput="applyFilters('match-jobs-table')"
                        class="bg-gray-700 border border-gray-600 text-gray-100 rounded px-3 py-1.5 text-xs
                               focus:outline-none focus:border-blue-500 placeholder-gray-500 w-44">
+                <select id="match-jobs-status" onchange="applyFilters('match-jobs-table')"
+                        class="bg-gray-700 border border-gray-600 text-gray-100 rounded px-2 py-1.5 text-xs
+                               focus:outline-none focus:border-blue-500">
+                    <option value="">All statuses</option>
+                    <option value="QUEUED">Queued</option>
+                    <option value="RUNNING">Running</option>
+                    <option value="COMPLETED">Completed</option>
+                    <option value="SKIPPED">Skipped</option>
+                    <option value="CANCELLED">Cancelled</option>
+                    <option value="FAILED">Failed</option>
+                </select>
+                <label class="flex items-center gap-2 text-xs text-gray-400 cursor-pointer select-none">
+                    <input type="checkbox" id="retryable-match" onchange="applyFilters('match-jobs-table')"
+                           class="w-3.5 h-3.5 accent-blue-500">
+                    Retryable only
+                </label>
                 <label class="flex items-center gap-2 text-xs text-gray-400 cursor-pointer select-none">
                     <input type="checkbox" id="ts-match" onchange="toggleTs('match-jobs-table','ts-match')"
                            class="w-3.5 h-3.5 accent-blue-500">
@@ -67,6 +84,7 @@
                     </thead>
                     <tbody class="divide-y divide-gray-700">
                     <tr th:each="job : ${fetchMatchStatsJobs}"
+                        th:attr="data-status=${job.status.name()},data-retryable=${(job.status.name() == 'CANCELLED' || job.status.name() == 'FAILED') && job.retried == false ? 'true' : 'false'}"
                         th:classappend="${job.status.name() == 'FAILED' ? 'bg-red-950/40' :
                             (job.status.name() == 'RUNNING' ? 'bg-blue-950/40' :
                             (job.status.name() == 'COMPLETED' ? 'bg-green-950/30' :
@@ -128,10 +146,27 @@
                 <h2 class="font-semibold text-gray-100">Fork Job Queue</h2>
                 <p class="text-xs text-gray-500 mt-0.5">Takes N recent matches, then filters out existing ones</p>
             </div>
-            <div class="flex items-center gap-4">
-                <input type="text" id="fork-jobs-filter" placeholder="Filter…" oninput="filterTable(this,'fork-jobs-table')"
+            <div class="flex flex-wrap items-center gap-4">
+                <input type="text" id="fork-jobs-filter" placeholder="Filter…"
+                       oninput="applyFilters('fork-jobs-table')"
                        class="bg-gray-700 border border-gray-600 text-gray-100 rounded px-3 py-1.5 text-xs
                               focus:outline-none focus:border-blue-500 placeholder-gray-500 w-44">
+                <select id="fork-jobs-status" onchange="applyFilters('fork-jobs-table')"
+                        class="bg-gray-700 border border-gray-600 text-gray-100 rounded px-2 py-1.5 text-xs
+                               focus:outline-none focus:border-blue-500">
+                    <option value="">All statuses</option>
+                    <option value="QUEUED">Queued</option>
+                    <option value="RUNNING">Running</option>
+                    <option value="COMPLETED">Completed</option>
+                    <option value="SKIPPED">Skipped</option>
+                    <option value="CANCELLED">Cancelled</option>
+                    <option value="FAILED">Failed</option>
+                </select>
+                <label class="flex items-center gap-2 text-xs text-gray-400 cursor-pointer select-none">
+                    <input type="checkbox" id="retryable-fork" onchange="applyFilters('fork-jobs-table')"
+                           class="w-3.5 h-3.5 accent-blue-500">
+                    Retryable only
+                </label>
                 <label class="flex items-center gap-2 text-xs text-gray-400 cursor-pointer select-none">
                     <input type="checkbox" id="ts-fork" onchange="toggleTs('fork-jobs-table','ts-fork')"
                            class="w-3.5 h-3.5 accent-blue-500">
@@ -156,6 +191,7 @@
                     </thead>
                     <tbody class="divide-y divide-gray-700">
                     <tr th:each="job : ${fetchPlayerMatchesJobs}"
+                        th:attr="data-status=${job.status.name()},data-retryable=${(job.status.name() == 'CANCELLED' || job.status.name() == 'FAILED') ? 'true' : 'false'}"
                         th:classappend="${job.status.name() == 'FAILED' ? 'bg-red-950/40' :
                             (job.status.name() == 'RUNNING' ? 'bg-blue-950/40' :
                             (job.status.name() == 'COMPLETED' ? 'bg-green-950/30' :
@@ -262,6 +298,27 @@
 
 <script>
     // ── Table filter ───────────────────────────────────────────
+    function getFilterIds(tableId) {
+        if (tableId === 'match-jobs-table') return { text: 'match-jobs-filter', status: 'match-jobs-status', retryable: 'retryable-match' };
+        if (tableId === 'fork-jobs-table')  return { text: 'fork-jobs-filter',  status: 'fork-jobs-status',  retryable: 'retryable-fork'  };
+        return null;
+    }
+
+    function applyFilters(tableId) {
+        const ids = getFilterIds(tableId);
+        const q        = ids ? (document.getElementById(ids.text)?.value.toLowerCase() ?? '')      : '';
+        const status   = ids ? (document.getElementById(ids.status)?.value ?? '')                   : '';
+        const retryOnly= ids ? (document.getElementById(ids.retryable)?.checked ?? false)           : false;
+
+        document.getElementById(tableId).querySelectorAll('tbody tr').forEach(row => {
+            const textMatch     = !q        || row.textContent.toLowerCase().includes(q);
+            const statusMatch   = !status   || row.dataset.status === status;
+            const retryMatch    = !retryOnly || row.dataset.retryable === 'true';
+            row.style.display   = textMatch && statusMatch && retryMatch ? '' : 'none';
+        });
+    }
+
+    // Legacy alias used by players table (no status/retryable controls there)
     function filterTable(input, tableId) {
         const q = input.value.toLowerCase();
         document.getElementById(tableId).querySelectorAll('tbody tr').forEach(row => {
@@ -276,7 +333,6 @@
         const checked = document.getElementById(cbId).checked;
         const table   = document.getElementById(tableId);
         table.classList.toggle('ts-hidden', !checked);
-        // Persist globally (both tables share same preference)
         localStorage.setItem(TS_KEY, checked ? '1' : '0');
     }
 
