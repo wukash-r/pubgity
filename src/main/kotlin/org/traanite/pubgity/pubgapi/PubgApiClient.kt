@@ -19,10 +19,12 @@ class PubgApiClient(
     private val restClient: RestClient,
     private val rateLimiter: RateLimiter,
     private val retry: Retry,
-    private val matchCache: Cache<String, MatchResponse>
+    private val matchCache: Cache<String, MatchResponse>,
+    private val seasonsCache: Cache<String, SeasonsResponse>
 ) {
     companion object {
         private val logger = LoggerFactory.getLogger(PubgApiClient::class.java)
+        private const val SEASONS_CACHE_KEY = "SEASONS_CACHE_KEY"
     }
 
     fun getPlayerByName(name: String): PlayerData {
@@ -84,6 +86,12 @@ class PubgApiClient(
     }
 
     fun getSeasons(): SeasonsResponse {
+        val cached = seasonsCache.getIfPresent(SEASONS_CACHE_KEY)
+        if (cached != null) {
+            logger.info("Seasons cache hit")
+            return cached
+        }
+
         logger.info("Fetching seasons data")
         return rateLimitedCall {
             val response = restClient.get().uri(endpoints.seasons).retrieve()
@@ -95,6 +103,7 @@ class PubgApiClient(
                     throw PubgApiException("Seasons data fetch failed: ${response.statusCode}")
                 }.body<SeasonsResponse>()!!
             logger.info("Seasons data fetched successfully, total seasons: ${response.data.size}")
+            seasonsCache.put(SEASONS_CACHE_KEY, response)
             response
         }
     }
@@ -132,7 +141,9 @@ class PubgApiConfiguration {
 
         val matchCache = Caffeine.newBuilder().maximumSize(apiProperties.matchCache.maxSize)
             .expireAfterWrite(apiProperties.matchCache.ttl).build<String, MatchResponse>()
+        val seasonsCache = Caffeine.newBuilder().maximumSize(apiProperties.seasonsCache.maxSize)
+            .expireAfterWrite(apiProperties.seasonsCache.ttl).build<String, SeasonsResponse>()
 
-        return PubgApiClient(endpoints, restClient, rateLimiter, retry, matchCache)
+        return PubgApiClient(endpoints, restClient, rateLimiter, retry, matchCache, seasonsCache)
     }
 }

@@ -10,7 +10,8 @@ data class PubgApiProperties(
     val endpoints: EndpointProperties = EndpointProperties(),
     val rateLimit: RateLimitProperties = RateLimitProperties(),
     val retry: RetryProperties = RetryProperties(),
-    val matchCache: MatchCacheProperties = MatchCacheProperties()
+    val matchCache: MatchCacheProperties = MatchCacheProperties(),
+    val seasonsCache: SeasonsCache = SeasonsCache()
 ) {
     data class RateLimitProperties(
         val limitForPeriod: Int = 10,
@@ -34,6 +35,11 @@ data class PubgApiProperties(
     data class MatchCacheProperties(
         val maxSize: Long = 500,
         val ttl: Duration = Duration.ofHours(1)
+    )
+
+    data class SeasonsCache(
+        val ttl: Duration = Duration.ofDays(1),
+        val maxSize: Long = 50,
     )
 }
 
