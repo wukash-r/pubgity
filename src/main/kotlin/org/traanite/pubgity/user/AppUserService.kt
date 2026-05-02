@@ -15,7 +15,7 @@ class AppUserService(private val repository: AppUserRepository) {
 
     /**
      * Called on every OIDC login. Creates the user record on first login;
-     * syncs email and roles (sourced from Keycloak realm roles) on every subsequent login.
+     * syncs email and roles (sourced from the OIDC roles claim) on every subsequent login.
      * Username is intentionally not overwritten from the OIDC claim after initial creation,
      * so that users can customise it in their profile.
      */

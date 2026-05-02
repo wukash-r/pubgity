@@ -5,13 +5,13 @@ spring:
     oauth2:
       client:
         registration:
-          keycloak:
+          oidc:
             client-id: ${OIDC_CLIENT_ID:change-me}
             client-secret: ${OIDC_CLIENT_SECRET:change-me}
             scope: openid,profile,email
             authorization-grant-type: authorization_code
         provider:
-          keycloak:
+          oidc:
             issuer-uri: ${OIDC_ISSUER_URI:https://keycloak.example.com/realms/pubgity}
   mongodb:
     uri: mongodb://user:password@localhost:27017
@@ -20,6 +20,9 @@ spring:
     scheduling:
       pool:
         size: 5
+pubgity:
+  oidc:
+    roles-claim: realm_access.roles
 pubg:
   api:
     key: pubgApiKey
