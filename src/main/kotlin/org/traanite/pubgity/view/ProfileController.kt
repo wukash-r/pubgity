@@ -1,6 +1,7 @@
 package org.traanite.pubgity.view
 
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.core.Authentication
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
@@ -15,7 +16,8 @@ import org.traanite.pubgity.user.AppUserService
 @RequestMapping("/profile")
 class ProfileController(
     private val appUserService: AppUserService,
-    private val playerService: PlayerService
+    private val playerService: PlayerService,
+    @Value("\${spring.security.oauth2.client.provider.keycloak.issuer-uri}") private val keycloakIssuerUri: String
 ) {
     companion object {
         private val logger = LoggerFactory.getLogger(ProfileController::class.java)
@@ -27,6 +29,7 @@ class ProfileController(
         val linkedPlayer = appUser.linkedPlayerId?.let { playerService.findById(it) }
         model.addAttribute("appUser", appUser)
         model.addAttribute("linkedPlayer", linkedPlayer)
+        model.addAttribute("keycloakAccountUrl", "$keycloakIssuerUri/account")
         return "profile"
     }
 

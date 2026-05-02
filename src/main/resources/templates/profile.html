@@ -29,15 +29,28 @@
         </div>
 
         <div class="grid grid-cols-1 gap-1">
-            <label class="text-xs text-gray-500">Role</label>
-            <span class="inline-flex items-center gap-1.5">
-                <span class="px-2 py-0.5 rounded-full text-xs font-semibold"
-                      th:classappend="${appUser.role.name() == 'ADMIN'    ? 'bg-violet-700 text-white' :
-                                       (appUser.role.name() == 'MODERATOR' ? 'bg-blue-700 text-white' :
-                                                                              'bg-gray-700 text-gray-300')}"
-                      th:text="${appUser.role}">USER</span>
+            <label class="text-xs text-gray-500">Roles</label>
+            <span class="inline-flex flex-wrap items-center gap-1.5">
+                <span th:each="role : ${appUser.roles}"
+                      class="px-2 py-0.5 rounded-full text-xs font-semibold"
+                      th:classappend="${role.name() == 'ADMIN'    ? 'bg-violet-700 text-white' :
+                                       (role.name() == 'MODERATOR' ? 'bg-blue-700 text-white' :
+                                                                      'bg-gray-700 text-gray-300')}"
+                      th:text="${role}">USER</span>
             </span>
         </div>
+    </div>
+
+    <!-- Manage account via Keycloak -->
+    <div class="bg-gray-800 border border-gray-700 rounded-lg p-5 flex items-center justify-between gap-4">
+        <div>
+            <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-1">Security &amp; Account Settings</h2>
+            <p class="text-xs text-gray-500">Change your password, email address, and manage two-factor authentication in the Keycloak account portal.</p>
+        </div>
+        <a th:href="${keycloakAccountUrl}" target="_blank" rel="noopener noreferrer"
+           class="shrink-0 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded transition-colors">
+            Manage account ↗
+        </a>
     </div>
 
     <!-- Change username -->
