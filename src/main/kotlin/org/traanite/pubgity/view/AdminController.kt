@@ -6,7 +6,6 @@ import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.*
 import org.traanite.pubgity.player.PlayerService
-import org.traanite.pubgity.user.AppRole
 import org.traanite.pubgity.user.AppUserService
 
 @Controller
@@ -23,16 +22,9 @@ class AdminController(
     fun listUsers(model: Model): String {
         model.addAttribute("users", appUserService.findAll())
         model.addAttribute("players", playerService.findAll())
-        model.addAttribute("roles", AppRole.entries)
         return "admin/users"
     }
 
-    @PostMapping("/users/{id}/role")
-    fun changeRole(@PathVariable id: String, @RequestParam role: AppRole): String {
-        appUserService.assignRole(ObjectId(id), role)
-        logger.info("Admin changed role of user {} to {}", id, role)
-        return "redirect:/admin/users"
-    }
 
     @PostMapping("/users/{id}/moderator-constraints")
     fun updateModeratorConstraints(

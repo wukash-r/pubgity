@@ -1,194 +1,128 @@
-# OIDC / SSO Setup Guide
+# Keycloak Setup Guide
 
-Pubgity delegates authentication to an external OpenID Connect (OIDC) provider.
-This document is split into two parts:
+Pubgity delegates authentication to Keycloak via OpenID Connect.
+Roles (`ADMIN`, `MODERATOR`, `USER`) are managed as **Keycloak realm roles** and synced
+into Pubgity's local user store on every login.
 
-1. **Generic OIDC requirements** — what any conformant provider must supply.
-2. **Authentik step-by-step** — concrete instructions for the default supported provider.
-
----
-
-## Part 1 — Generic OIDC Requirements
-
-### Required scopes
-
-The provider must grant the following scopes when requested:
-
-| Scope     | Purpose                              |
-|-----------|--------------------------------------|
-| `openid`  | Core OIDC — enables ID token         |
-| `profile` | `preferred_username`, `name` claims  |
-| `email`   | `email` claim                        |
-
-### Required claims in the ID token / userinfo endpoint
-
-| Claim                | Required | Notes                                                          |
-|----------------------|----------|----------------------------------------------------------------|
-| `sub`                | ✅       | Stable, unique user identifier. Never changes for a user.     |
-| `email`              | ✅       | Displayed in profile; kept in sync on every login.            |
-| `preferred_username` | Recommended | Used as the default display name. Falls back to `name`, then `email`, then `sub`. |
-
-### Redirect URIs to register with your provider
-
-| URI                                              | Purpose          |
-|--------------------------------------------------|------------------|
-| `https://<your-host>/login/oauth2/code/oidc`     | Authorization callback |
-| `https://<your-host>/`                           | Post-logout redirect   |
-
-Replace `<your-host>` with the public hostname of your Pubgity instance (e.g. `pubgity.example.com`).
-For local development use `http://localhost:8080`.
-
-### Environment variables
-
-Set these before starting the application:
-
-| Variable            | Description                                                                 | Example                                                          |
-|---------------------|-----------------------------------------------------------------------------|------------------------------------------------------------------|
-| `OIDC_ISSUER_URI`   | Provider issuer URL (must expose `/.well-known/openid-configuration`)       | `https://authentik.example.com/application/o/pubgity/`          |
-| `OIDC_CLIENT_ID`    | OAuth2 client ID issued by the provider                                     | `abc123`                                                        |
-| `OIDC_CLIENT_SECRET`| OAuth2 client secret issued by the provider                                 | `supersecret`                                                   |
-| `APP_ADMIN_SUB`     | OIDC `sub` of the first user to bootstrap as ADMIN (one-time, idempotent)  | `a1b2c3d4-...` (UUID format for most providers)                 |
-
-`APP_ADMIN_SUB` is only needed once. After the first ADMIN exists the variable is ignored.
-See [Finding the `sub`](#finding-the-sub) below.
-
-### Docker Compose / environment file example
-
-```env
-OIDC_ISSUER_URI=https://authentik.example.com/application/o/pubgity/
-OIDC_CLIENT_ID=abc123def456
-OIDC_CLIENT_SECRET=a-very-long-secret
-APP_ADMIN_SUB=a1b2c3d4-e5f6-7890-abcd-ef1234567890
-```
-
-### Notes on role management
-
-Roles (`ADMIN`, `MODERATOR`, `USER`) are managed **locally in Pubgity's MongoDB**, not via
-provider groups or claims. This design means:
-
-- No provider-specific group mapping is needed.
-- Roles survive provider migrations.
-- Changing a user's role takes effect on their **next login** (new session). Existing sessions
-  retain the old role until they re-authenticate.
-
-### OIDC RP-Initiated Logout
-
-Pubgity supports OIDC RP-initiated logout (the user is redirected to the provider's
-`end_session_endpoint` after signing out locally). This requires the provider's discovery
-document to expose `end_session_endpoint`. Most compliant providers (Authentik, Keycloak,
-Okta, Auth0) do this by default.
+> **For local development** see [LOCAL_DEV.md](LOCAL_DEV.md) — a pre-configured realm JSON
+> with 5 seed users is imported automatically.
 
 ---
 
-## Part 2 — Authentik Step-by-Step
+## How roles work
 
-### Prerequisites
+| Role        | Access                                                              |
+|-------------|---------------------------------------------------------------------|
+| `ADMIN`     | Full access — admin panel, all jobs, all players                    |
+| `MODERATOR` | Jobs page scoped to assigned players, subject to queue size limit   |
+| `USER`      | Public pages + personal home/profile                                |
 
-- A running [Authentik](https://goauthentik.io) instance.
-- Admin access to the Authentik interface.
-
----
-
-### 1 — Create an OAuth2/OpenID Connect Provider
-
-1. Log in to the Authentik admin interface → **Applications → Providers**.
-2. Click **Create** → choose **OAuth2/OpenID Connect Provider**.
-3. Fill in the form:
-
-   | Field                         | Value                                              |
-   |-------------------------------|----------------------------------------------------|
-   | **Name**                      | `Pubgity`                                         |
-   | **Authorization flow**        | `default-authorization-flow` (or your custom one) |
-   | **Client type**               | `Confidential`                                    |
-   | **Client ID**                 | (auto-generated — copy this for `OIDC_CLIENT_ID`) |
-   | **Client Secret**             | (auto-generated — copy this for `OIDC_CLIENT_SECRET`) |
-   | **Redirect URIs / Origins**   | `https://<your-host>/login/oauth2/code/oidc`      |
-   | **Post logout redirect URIs** | `https://<your-host>/`                            |
-   | **Scopes**                    | `openid`, `profile`, `email` (add via the Scope Mapping section) |
-   | **Subject mode**              | `Based on the User's UUID` (recommended — gives a stable `sub`) |
-
-4. Click **Finish / Save**.
+- Roles are assigned as **Keycloak realm roles** on the user's account.
+- Pubgity reads `realm_access.roles` from the Keycloak **ID token** (injected by a
+  protocol mapper — see Step 3 below) on every login and syncs the local `AppUser.role`.
+- Role changes take effect on the user's **next login**.
+- Moderator constraints (allowed players, max queue size) are configured in Pubgity's
+  Admin panel at `/admin/users` — they are not managed in Keycloak.
 
 ---
 
-### 2 — Create the Application
+## Production Setup
 
-1. Go to **Applications → Applications** → click **Create**.
+### Step 1 — Create a Realm
+
+1. Log in to the Keycloak admin console
+2. Click the realm selector (top-left) → **Create Realm**
+3. Set **Realm name**: `pubgity` (or any name — update `OIDC_ISSUER_URI` accordingly)
+4. **Create**
+
+### Step 2 — Create realm roles
+
+1. Go to **Realm roles → Create role**
+2. Create three roles (names must match exactly):
+   - `ADMIN`
+   - `MODERATOR`
+   - `USER`
+
+### Step 3 — Create a Client
+
+1. Go to **Clients → Create client**
 2. Fill in:
 
-   | Field        | Value               |
-   |--------------|---------------------|
-   | **Name**     | `Pubgity`          |
-   | **Slug**     | `pubgity`          |
-   | **Provider** | Select the provider created above |
+   | Field           | Value                                              |
+   |-----------------|----------------------------------------------------|
+   | Client type     | `OpenID Connect`                                   |
+   | Client ID       | `pubgity`                                          |
 
-3. Save. The **Issuer URI** will now be:
-   ```
-   https://<authentik-host>/application/o/pubgity/
-   ```
-   Use this as `OIDC_ISSUER_URI`.
+3. Click **Next**
+4. Enable **Client authentication** (confidential client), disable **Direct access grants**
+5. Click **Next**
+6. Set **Valid redirect URIs**: `https://<your-host>/login/oauth2/code/keycloak`
+7. Set **Valid post-logout redirect URIs**: `https://<your-host>/`
+8. Set **Web origins**: `https://<your-host>`
+9. **Save**
+10. Go to the **Credentials** tab — copy the **Client secret**
 
----
+### Step 4 — Add the realm-roles protocol mapper
 
-### 3 — Enable Self-Enrollment and Account Recovery (optional)
+This mapper injects realm roles into the ID token so Pubgity can read them.
 
-These are handled entirely by Authentik — no code changes in Pubgity are needed.
+1. In your client, go to **Client scopes** tab → click `pubgity-dedicated`
+2. Click **Add mapper → By configuration → User Realm Role**
+3. Fill in:
 
-- **User registration (self-enrollment)**: In your authorization flow, add the
-  *User enrollment* stage or use Authentik's `default-enrollment-flow`.
-- **Password reset / recovery**: Enable the `default-recovery-flow` on the provider or
-  point users to `https://<authentik-host>/if/flow/default-recovery-flow/`.
+   | Field                       | Value                 |
+   |-----------------------------|-----------------------|
+   | Name                        | `realm roles`         |
+   | Token Claim Name            | `realm_access.roles`  |
+   | Add to ID token             | `On`                  |
+   | Add to access token         | `On`                  |
+   | Add to userinfo             | `On`                  |
+   | Multivalued                 | `On`                  |
 
----
+4. **Save**
 
-### 4 — Finding the `sub` for `APP_ADMIN_SUB`
+### Step 5 — Assign roles to users
 
-The `sub` is the user's UUID in Authentik.
+1. Go to **Users** → click a user → **Role mapping** tab
+2. Click **Assign role** → filter by **realm roles**
+3. Select `ADMIN`, `MODERATOR`, or `USER` as appropriate
 
-1. Go to **Directory → Users** → click the user you want to be the first admin.
-2. Click the **User Info** tab (or check the **Attributes** section).
-3. Find the `sub` field — it looks like `a1b2c3d4-e5f6-7890-abcd-ef1234567890`.
+### Step 6 — Set environment variables
 
-Alternatively, have the target user log in to Pubgity first (they will be created as
-role `USER`), then query MongoDB:
+| Variable            | Description                                              | Example                                              |
+|---------------------|----------------------------------------------------------|------------------------------------------------------|
+| `OIDC_ISSUER_URI`   | Keycloak realm URL                                       | `https://keycloak.example.com/realms/pubgity`        |
+| `OIDC_CLIENT_ID`    | Client ID from Step 3                                    | `pubgity`                                            |
+| `OIDC_CLIENT_SECRET`| Client secret from Step 3                               | `supersecret`                                        |
 
-```js
-db.app_users.findOne({ email: "your@email.com" }, { sub: 1 })
-```
-
----
-
-### 5 — Promote the first admin
-
-Set `APP_ADMIN_SUB` to the sub value found above **before** (or on) first application start.
-The promotion is idempotent — it only runs if no ADMIN exists yet.
+**Docker Compose example:**
 
 ```yaml
-# docker-compose.yml example
 services:
   pubgity:
     environment:
-      APP_ADMIN_SUB: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
-      OIDC_ISSUER_URI: "https://authentik.example.com/application/o/pubgity/"
-      OIDC_CLIENT_ID: "abc123"
+      OIDC_ISSUER_URI: "https://keycloak.example.com/realms/pubgity"
+      OIDC_CLIENT_ID: "pubgity"
       OIDC_CLIENT_SECRET: "supersecret"
 ```
 
-After the first ADMIN exists, additional admins can be assigned via the Pubgity
-**Admin → User Management** panel (`/admin/users`).
-
 ---
 
-## Using a different OIDC provider
+## OIDC Requirements
 
-Any provider that:
-- Is compatible with the OIDC Core 1.0 specification,
-- Exposes a `/.well-known/openid-configuration` discovery document,
-- Issues `sub`, `email`, and (ideally) `preferred_username` claims,
+Pubgity requires the following from the provider:
 
-...will work with Pubgity without code changes. Simply set the three environment
-variables to point at your provider.
+| Requirement               | Notes                                                              |
+|---------------------------|--------------------------------------------------------------------|
+| `sub` claim               | Stable unique user identifier — never changes for a given user     |
+| `email` claim             | Synced to Pubgity on every login                                   |
+| `preferred_username`      | Display name (falls back to `name`, `email`, then `sub`)          |
+| `realm_access.roles`      | List of realm role names — must be present in the ID token         |
+| `end_session_endpoint`    | Required for RP-initiated logout (Keycloak provides this natively) |
 
-Providers known to be compatible: **Keycloak**, **Okta**, **Auth0**, **Dex**,
-**Microsoft Entra ID** (Azure AD), **Google**, **GitLab**, **GitHub** (via OIDC bridge).
+### Redirect URIs to register
 
+| URI                                                | Purpose                   |
+|----------------------------------------------------|---------------------------|
+| `https://<your-host>/login/oauth2/code/keycloak`  | Authorization callback    |
+| `https://<your-host>/`                             | Post-logout redirect       |

@@ -18,7 +18,6 @@ class SecurityConfig(
     private val oidcUserService: PubgityOidcUserService,
     private val clientRegistrationRepository: ClientRegistrationRepository
 ) {
-
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
@@ -42,8 +41,7 @@ class SecurityConfig(
 
     /**
      * Performs OIDC RP-initiated logout — redirects to the provider's end_session_endpoint
-     * after local session invalidation. Works with any conformant OIDC provider that exposes
-     * the endpoint in its discovery document (Authentik, Keycloak, Okta, etc.).
+     * after local session invalidation.
      */
     private fun oidcLogoutSuccessHandler(): LogoutSuccessHandler {
         val handler = OidcClientInitiatedLogoutSuccessHandler(clientRegistrationRepository)

@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
->
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <title>Pubgity - Players</title>
@@ -32,16 +31,16 @@
     <!-- Player List -->
     <div class="overflow-y-auto max-h-[70vh] rounded border border-gray-800">
         <div class="flex flex-col gap-px">
-        <a th:each="player : ${players}"
-           th:if="${player.id != null}"
-           th:href="@{/players/{id}(id=${player.accountId})}"
-           class="flex items-center justify-between px-4 py-3 bg-gray-800 hover:bg-gray-700
+            <a th:each="player : ${players}"
+               th:if="${player.id != null}"
+               th:href="@{/players/{id}(id=${player.accountId})}"
+               class="flex items-center justify-between px-4 py-3 bg-gray-800 hover:bg-gray-700
                   border-b border-gray-700/50 transition-colors group">
-            <span th:text="${player.playerName}" class="font-medium text-gray-100 group-hover:text-white"></span>
-            <span class="text-xs px-2 py-1 bg-gray-700 group-hover:bg-gray-600 text-gray-400 rounded-full">
-                <span th:text="${#lists.size(player.matches.matchIds)}"></span> matches
+                <span th:text="${player.playerName}" class="font-medium text-gray-100 group-hover:text-white"></span>
+                <span class="text-xs px-2 py-1 bg-gray-700 group-hover:bg-gray-600 text-gray-400 rounded-full">
+                <span th:text="${#sets.size(player.matches.matchIds)}"></span> matches
             </span>
-        </a>
+            </a>
         </div>
     </div>
 

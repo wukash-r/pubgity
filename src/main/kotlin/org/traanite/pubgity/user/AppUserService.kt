@@ -15,41 +15,19 @@ class AppUserService(private val repository: AppUserRepository) {
 
     /**
      * Called on every OIDC login. Creates the user record on first login;
-     * keeps the email current on subsequent logins.
+     * syncs email and roles (sourced from Keycloak realm roles) on every subsequent login.
      * Username is intentionally not overwritten from the OIDC claim after initial creation,
      * so that users can customise it in their profile.
      */
-    fun upsertOnLogin(sub: String, defaultUsername: String, email: String): AppUser {
+    fun upsertOnLogin(sub: String, defaultUsername: String, email: String, roles: Set<AppRole>): AppUser {
         val existing = repository.findBySub(sub)
         return if (existing == null) {
-            val user = AppUser(sub = sub, username = defaultUsername, email = email)
-            repository.save(user).also { logger.info("Created new AppUser for sub={}", sub) }
+            val user = AppUser(sub = sub, username = defaultUsername, email = email, roles = roles)
+            repository.save(user).also { logger.info("Created new AppUser for sub={}, roles={}", sub, roles) }
         } else {
-            repository.save(existing.withEmail(email))
-                .also { logger.debug("Updated email on login for sub={}", sub) }
+            repository.save(existing.withEmail(email).withRoles(roles))
+                .also { logger.debug("Synced email and roles on login for sub={}, roles={}", sub, roles) }
         }
-    }
-
-    /**
-     * Idempotent first-admin bootstrap.
-     * Promotes [sub] to [AppRole.ADMIN] only when no ADMIN exists yet.
-     * Creates a stub AppUser if the sub has not logged in yet.
-     */
-    fun promoteFirstAdmin(sub: String) {
-        if (repository.existsByRole(AppRole.ADMIN)) {
-            logger.debug("Admin already exists – skipping first-admin promotion for sub={}", sub)
-            return
-        }
-        val existing = repository.findBySub(sub)
-        val user = existing ?: AppUser(sub = sub, username = "admin", email = "")
-        repository.save(user.withRole(AppRole.ADMIN))
-        logger.info("Promoted first admin: sub={}", sub)
-    }
-
-    fun assignRole(id: ObjectId, role: AppRole): AppUser {
-        val user = requireUser(id)
-        return repository.save(user.withRole(role))
-            .also { logger.info("Assigned role {} to user {}", role, id) }
     }
 
     fun updateModeratorConstraints(id: ObjectId, allowedPlayerIds: Set<ObjectId>, maxQueueSize: Int): AppUser {

@@ -5,15 +5,14 @@ spring:
     oauth2:
       client:
         registration:
-          oidc:
+          keycloak:
             client-id: ${OIDC_CLIENT_ID:change-me}
             client-secret: ${OIDC_CLIENT_SECRET:change-me}
             scope: openid,profile,email
             authorization-grant-type: authorization_code
-            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
         provider:
-          oidc:
-            issuer-uri: ${OIDC_ISSUER_URI:https://authentik.example.com/application/o/pubgity/}
+          keycloak:
+            issuer-uri: ${OIDC_ISSUER_URI:https://keycloak.example.com/realms/pubgity}
   mongodb:
     uri: mongodb://user:password@localhost:27017
     database: pubgity

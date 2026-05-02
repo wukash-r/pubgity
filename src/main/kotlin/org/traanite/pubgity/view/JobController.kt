@@ -28,9 +28,11 @@ class JobController(
     @GetMapping
     fun jobs(model: Model, auth: Authentication): String {
         val appUser = appUserService.findByAuth(auth)
-
+        // todo use security context holder
+        //  and pathmatchers already rescript this endpoint so just check if moderator
         val (players, allJobs) = when {
-            appUser?.role == AppRole.MODERATOR -> {
+            appUser?.hasRole(AppRole.ADMIN) == true -> playerService.findAll() to jobService.getJobs()
+            appUser?.hasRole(AppRole.MODERATOR) == true -> {
                 val allowedIds = appUser.moderatorConstraints?.allowedPlayerIds ?: emptySet()
                 val allowedPlayers = allowedIds.mapNotNull { playerService.findById(it) }
                 val allowedAccountIds = allowedPlayers.mapNotNull { it.accountId }.toSet()
@@ -40,8 +42,8 @@ class JobController(
             else -> playerService.findAll() to jobService.getJobs()
         }
 
-        val isAdmin = appUser?.role == AppRole.ADMIN
-        logger.debug("Jobs page: role={}, {} players, {} jobs", appUser?.role, players.size, allJobs.size)
+        val isAdmin = appUser?.hasRole(AppRole.ADMIN) == true
+        logger.debug("Jobs page: roles={}, {} players, {} jobs", appUser?.roles, players.size, allJobs.size)
 
         model.addAttribute("players", players)
         model.addAttribute("fetchMatchStatsJobs", allJobs.filter { it.jobType == JobType.FETCH_MATCH_STATS })
@@ -83,7 +85,8 @@ class JobController(
     ): String {
         val appUser = appUserService.findByAuth(auth)
 
-        if (appUser?.role == AppRole.MODERATOR) {
+        // todo simplify...
+        if (appUser?.hasRole(AppRole.MODERATOR) == true && !appUser.hasRole(AppRole.ADMIN)) {
             val constraints = appUser.moderatorConstraints
             if (constraints == null || !constraints.allowedPlayerIds.contains(id)) {
                 redirectAttributes.addFlashAttribute("error", "You are not allowed to queue jobs for this player.")
@@ -119,7 +122,7 @@ class JobController(
      */
     private fun canAccessJob(jobId: ObjectId, auth: Authentication): Boolean {
         val appUser = appUserService.findByAuth(auth) ?: return false
-        if (appUser.role == AppRole.ADMIN) return true
+        if (appUser.hasRole(AppRole.ADMIN)) return true
 
         val allowedIds = appUser.moderatorConstraints?.allowedPlayerIds ?: return false
         val allowedAccountIds = allowedIds.mapNotNull { playerService.findById(it)?.accountId }.toSet()

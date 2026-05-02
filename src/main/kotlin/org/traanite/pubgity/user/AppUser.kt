@@ -8,30 +8,34 @@ import org.springframework.data.mongodb.core.mapping.Document
 /**
  * Aggregate root for the user context.
  *
- * Represents a Pubgity application user whose identity is managed by an external OIDC provider.
+ * Represents a Pubgity application user whose identity is managed by Keycloak.
  * The [sub] claim (OIDC subject) is the stable, provider-issued identity key.
- * Roles and access constraints are owned and enforced by this application.
+ * [roles] are synced from Keycloak realm roles on every login — they are never
+ * modified locally.
  */
 @Document(collection = "app_users")
 data class AppUser(
     @Id val id: ObjectId? = null,
 
-    /** OIDC `sub` claim — uniquely identifies this user across logins. Provider-agnostic. */
+    /** OIDC `sub` claim — uniquely identifies this user across logins. */
     @Indexed(unique = true)
     val sub: String,
 
     val username: String,
     val email: String,
 
-    val role: AppRole = AppRole.USER,
+    /** All Keycloak realm roles assigned to this user, synced on every login. */
+    val roles: Set<AppRole> = setOf(AppRole.USER),
 
     /** Reference to a [org.traanite.pubgity.player.Player] document the user has linked to their account. */
     val linkedPlayerId: ObjectId? = null,
 
-    /** Only meaningful when [role] is [AppRole.MODERATOR]. */
+    /** Only meaningful when [roles] contains [AppRole.MODERATOR]. */
     val moderatorConstraints: ModeratorConstraints? = null
 ) {
-    fun withRole(newRole: AppRole): AppUser = copy(role = newRole)
+    fun hasRole(role: AppRole): Boolean = role in roles
+
+    fun withRoles(newRoles: Set<AppRole>): AppUser = copy(roles = newRoles)
 
     fun withModeratorConstraints(constraints: ModeratorConstraints): AppUser =
         copy(moderatorConstraints = constraints)
