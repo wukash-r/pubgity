@@ -6,9 +6,10 @@
   "registrationAllowed": false,
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
-  "resetPasswordAllowed": false,
+  "resetPasswordAllowed": true,
   "editUsernameAllowed": false,
   "bruteForceProtected": true,
+  "userManagedAccessAllowed": true,
 
   "roles": {
     "realm": [
@@ -80,7 +81,10 @@
       "credentials": [
         { "type": "password", "value": "Admin1234!", "temporary": false }
       ],
-      "realmRoles": ["ADMIN"]
+      "realmRoles": ["ADMIN"],
+      "clientRoles": {
+        "account": ["manage-account", "manage-account-links", "view-profile"]
+      }
     },
     {
       "id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
@@ -93,7 +97,10 @@
       "credentials": [
         { "type": "password", "value": "Mod1234!", "temporary": false }
       ],
-      "realmRoles": ["MODERATOR"]
+      "realmRoles": ["MODERATOR"],
+      "clientRoles": {
+        "account": ["manage-account", "manage-account-links", "view-profile"]
+      }
     },
     {
       "id": "cccccccc-cccc-cccc-cccc-cccccccccccc",
@@ -106,7 +113,10 @@
       "credentials": [
         { "type": "password", "value": "Mod1234!", "temporary": false }
       ],
-      "realmRoles": ["MODERATOR"]
+      "realmRoles": ["MODERATOR"],
+      "clientRoles": {
+        "account": ["manage-account", "manage-account-links", "view-profile"]
+      }
     },
     {
       "id": "dddddddd-dddd-dddd-dddd-dddddddddddd",
@@ -119,7 +129,10 @@
       "credentials": [
         { "type": "password", "value": "User1234!", "temporary": false }
       ],
-      "realmRoles": ["USER"]
+      "realmRoles": ["USER"],
+      "clientRoles": {
+        "account": ["manage-account", "manage-account-links", "view-profile"]
+      }
     },
     {
       "id": "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
@@ -132,7 +145,10 @@
       "credentials": [
         { "type": "password", "value": "User1234!", "temporary": false }
       ],
-      "realmRoles": ["USER"]
+      "realmRoles": ["USER"],
+      "clientRoles": {
+        "account": ["manage-account", "manage-account-links", "view-profile"]
+      }
     }
   ]
 }

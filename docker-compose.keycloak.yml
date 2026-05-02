@@ -6,8 +6,11 @@ services:
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: true
+      KC_METRICS_ENABLED: true
     ports:
       - "8090:8080"
+      - "9000:9000"
     volumes:
       # Realm JSON is imported once on first startup (skipped if realm already exists).
       - ./keycloak:/opt/keycloak/data/import:ro
@@ -15,7 +18,4 @@ services:
       test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && grep -q '\"status\": \"UP\"' <&3"]
       interval: 10s
       timeout: 5s
-      retries: 12
-      start_period: 30s
-
-
+      retries: 20
