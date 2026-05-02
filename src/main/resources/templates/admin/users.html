@@ -9,36 +9,47 @@
 
 <div th:replace="~{fragments/nav :: nav}"></div>
 
-<main class="max-w-screen-xl mx-auto px-4 py-8 space-y-8">
+<main class="max-w-screen-xl mx-auto px-4 py-8 space-y-6">
     <div class="flex flex-wrap items-end justify-between gap-3">
         <h1 class="text-3xl font-bold text-white">User Management</h1>
         <p class="text-sm text-gray-500">
-            Roles are managed in
-            <a href="http://localhost:8090" target="_blank"
-               class="text-blue-400 hover:text-blue-300 underline">Keycloak</a>
-            and synced here on every login.
+            Roles are managed in your identity provider and synced here on every login.
         </p>
     </div>
 
-    <div th:if="${#lists.isEmpty(users)}" class="text-gray-500">No users registered yet.</div>
+    <!-- User search -->
+    <div class="relative max-w-sm">
+        <input id="userSearch" type="text" placeholder="Filter users by name or email…"
+               oninput="filterUsers()"
+               class="w-full bg-gray-800 border border-gray-700 text-gray-100 rounded-lg px-4 py-2 text-sm
+                      focus:outline-none focus:border-blue-500 placeholder-gray-500">
+        <button onclick="document.getElementById('userSearch').value=''; filterUsers();"
+                class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 text-lg leading-none hidden"
+                id="userSearchClear">✕</button>
+    </div>
+
+    <div id="noUsersMsg" th:if="${#lists.isEmpty(users)}" class="text-gray-500">No users registered yet.</div>
+    <p id="noMatchMsg" class="text-gray-500 hidden">No users match your filter.</p>
 
     <!-- User cards -->
     <div th:each="user : ${users}"
-         class="bg-gray-800 border border-gray-700 rounded-lg p-5 space-y-5">
+         class="bg-gray-800 border border-gray-700 rounded-lg p-5 space-y-5 user-card"
+         th:data-username="${user.username}"
+         th:data-email="${user.email}">
 
         <!-- User header -->
         <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
                 <div class="flex items-center gap-2 flex-wrap">
                     <span class="font-semibold text-white text-lg" th:text="${user.username}">username</span>
-                    <!-- One badge per Keycloak realm role — read-only -->
+                    <!-- Role badges — read-only, synced from OIDC provider -->
                     <span th:each="r : ${user.roles}"
                           class="px-2 py-0.5 rounded-full text-xs font-semibold"
                           th:classappend="${r.name() == 'ADMIN'    ? 'bg-violet-700 text-white' :
                                            (r.name() == 'MODERATOR' ? 'bg-blue-700 text-white' :
                                                                        'bg-gray-700 text-gray-300')}"
                           th:text="${r}">ROLE</span>
-                    <span class="text-xs text-gray-600 italic">(synced from Keycloak)</span>
+                    <span class="text-xs text-gray-600 italic">(synced from identity provider)</span>
                 </div>
                 <div class="text-gray-500 text-sm mt-0.5" th:text="${user.email}"></div>
                 <div class="text-gray-600 text-xs font-mono mt-0.5" th:text="${'sub: ' + user.sub}"></div>
@@ -62,16 +73,36 @@
 
                 <div>
                     <label class="text-sm text-gray-400 block mb-2">Allowed players</label>
-                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-48 overflow-y-auto
+
+                    <!-- Player filter controls -->
+                    <div class="flex flex-wrap items-center gap-3 mb-2" th:unless="${#lists.isEmpty(players)}">
+                        <input type="text" placeholder="Filter players…"
+                               oninput="filterPlayers(this)"
+                               class="bg-gray-700 border border-gray-600 text-gray-200 text-xs rounded px-3 py-1.5
+                                      focus:outline-none focus:border-blue-500 placeholder-gray-500 w-48">
+                        <label class="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer select-none">
+                            <input type="checkbox" data-only-checked
+                                   onchange="filterPlayers(this.closest('form').querySelector('input[type=text][placeholder]'))"
+                                   class="accent-blue-500">
+                            Show only checked
+                        </label>
+                    </div>
+
+                    <div data-player-list
+                         class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-48 overflow-y-auto
                                 bg-gray-900/50 border border-gray-700 rounded p-3">
                         <label th:each="player : ${players}"
+                               data-player-item
+                               th:data-player-name="${player.playerName}"
                                class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
                             <input type="checkbox" name="allowedPlayerIds"
                                    th:value="${player.id}"
                                    th:checked="${user.moderatorConstraints?.allowedPlayerIds?.contains(player.id) ?: false}"
+                                   onchange="onPlayerCheckChange(this)"
                                    class="accent-blue-500">
                             <span th:text="${player.playerName}">Player</span>
                         </label>
+                        <p data-no-match-players class="text-gray-600 text-xs col-span-full hidden">No players match.</p>
                     </div>
                     <p th:if="${#lists.isEmpty(players)}" class="text-gray-600 text-xs mt-1">No tracked players yet.</p>
                 </div>
@@ -85,6 +116,51 @@
 
     </div>
 </main>
+
+<script>
+    // ── User list filter ──────────────────────────────────────────────────────
+
+    function filterUsers() {
+        const q = document.getElementById('userSearch').value.toLowerCase();
+        const cards = document.querySelectorAll('.user-card');
+        let visible = 0;
+        cards.forEach(card => {
+            const name  = (card.dataset.username || '').toLowerCase();
+            const email = (card.dataset.email    || '').toLowerCase();
+            const show  = name.includes(q) || email.includes(q);
+            card.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+        document.getElementById('noMatchMsg').classList.toggle('hidden', visible > 0 || cards.length === 0);
+        document.getElementById('userSearchClear').classList.toggle('hidden', q === '');
+    }
+
+    // ── Per-moderator player filter ───────────────────────────────────────────
+
+    function filterPlayers(searchInput) {
+        const form        = searchInput.closest('form');
+        const playerList  = form.querySelector('[data-player-list]');
+        const q           = searchInput.value.toLowerCase();
+        const onlyChecked = form.querySelector('[data-only-checked]')?.checked ?? false;
+        const items       = playerList.querySelectorAll('[data-player-item]');
+        let visible = 0;
+        items.forEach(item => {
+            const name    = (item.dataset.playerName || '').toLowerCase();
+            const checked = item.querySelector('input[type=checkbox]').checked;
+            const show    = name.includes(q) && (!onlyChecked || checked);
+            item.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+        playerList.querySelector('[data-no-match-players]')
+                  .classList.toggle('hidden', visible > 0 || items.length === 0);
+    }
+
+    // Re-apply the current filter when a checkbox is toggled (keeps "show only checked" live)
+    function onPlayerCheckChange(checkbox) {
+        const textInput = checkbox.closest('form').querySelector('input[type=text][placeholder]');
+        if (textInput) filterPlayers(textInput);
+    }
+</script>
 </body>
 </html>
 

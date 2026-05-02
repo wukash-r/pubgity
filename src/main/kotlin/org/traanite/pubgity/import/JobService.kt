@@ -27,16 +27,17 @@ class JobService(
         jobRepository.findAllByAccountIdInOrderByCreatedAtDesc(accountIds)
 
     /**
-     * Checks whether a moderator is allowed to queue another job given their constraints.
-     * Counts currently QUEUED or RUNNING jobs across the moderator's allowed players.
+     * Returns how many more jobs the moderator may still queue given their constraints.
+     * Counts currently QUEUED or RUNNING jobs across all of the moderator's allowed players
+     * and subtracts from [maxQueueSize]. Returns 0 when the queue is at or over capacity.
      */
-    fun canModeratorQueue(allowedPlayerIds: Set<ObjectId>, maxQueueSize: Int): Boolean {
+    fun moderatorRemainingCapacity(allowedPlayerIds: Set<ObjectId>, maxQueueSize: Int): Int {
         val accountIds = allowedPlayerIds
             .mapNotNull { playerService.findById(it)?.accountId }
             .toSet()
-        if (accountIds.isEmpty()) return false
+        if (accountIds.isEmpty()) return 0
         val active = jobRepository.countByAccountIdInAndStatusIn(accountIds, ACTIVE_STATUSES)
-        return active < maxQueueSize
+        return (maxQueueSize - active).toInt().coerceAtLeast(0)
     }
 
     fun queueJob(playerObjectId: ObjectId, matchCount: Int) {

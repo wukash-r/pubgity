@@ -43,12 +43,20 @@ class JobController(
         }
 
         val isAdmin = appUser?.hasRole(AppRole.ADMIN) == true
+        val moderatorMatchCountCap: Int? = if (!isAdmin && appUser?.hasRole(AppRole.MODERATOR) == true) {
+            val constraints = appUser.moderatorConstraints
+            if (constraints != null)
+                jobService.moderatorRemainingCapacity(constraints.allowedPlayerIds, constraints.maxQueueSize)
+            else 0
+        } else null
+
         logger.debug("Jobs page: roles={}, {} players, {} jobs", appUser?.roles, players.size, allJobs.size)
 
         model.addAttribute("players", players)
         model.addAttribute("fetchMatchStatsJobs", allJobs.filter { it.jobType == JobType.FETCH_MATCH_STATS })
         model.addAttribute("fetchPlayerMatchesJobs", allJobs.filter { it.jobType == JobType.FETCH_PLAYER_MATCHES })
         model.addAttribute("canManagePlayers", isAdmin)
+        model.addAttribute("moderatorMatchCountCap", moderatorMatchCountCap)
         return "jobs"
     }
 
@@ -92,13 +100,23 @@ class JobController(
                 redirectAttributes.addFlashAttribute("error", "You are not allowed to queue jobs for this player.")
                 return "redirect:/jobs"
             }
-            if (!jobService.canModeratorQueue(constraints.allowedPlayerIds, constraints.maxQueueSize)) {
+            val remaining = jobService.moderatorRemainingCapacity(constraints.allowedPlayerIds, constraints.maxQueueSize)
+            if (remaining <= 0) {
                 redirectAttributes.addFlashAttribute(
                     "error",
                     "Queue limit reached (max ${constraints.maxQueueSize} active jobs). Wait for existing jobs to complete."
                 )
                 return "redirect:/jobs"
             }
+            val effectiveMatchCount = matchCount.coerceIn(1, remaining)
+            if (effectiveMatchCount < matchCount) {
+                logger.info(
+                    "Coerced matchCount from {} to {} for moderator sub={} (remaining capacity={})",
+                    matchCount, effectiveMatchCount, appUser.sub, remaining
+                )
+            }
+            jobService.queueJob(id, effectiveMatchCount)
+            return "redirect:/jobs"
         }
 
         jobService.queueJob(id, matchCount)

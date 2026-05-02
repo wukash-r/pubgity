@@ -34,7 +34,7 @@ class FetchPlayerMatchesJobExecutor(
             updatedJob.matchCount!!,
             resolvedPlayer.matchIds
         )
-        createFetchMatchStatsJobs(job, newMatches)
+        createFetchMatchStatsJobs(updatedJob, newMatches)
     }
 
     private fun createFetchMatchStatsJobs(job: ImportJob, newMatches: List<FetchedMatch>) {
